@@ -2,7 +2,7 @@ services:
   - type: web
     name: occupra-backend
     runtime: node
-    rootDir: OCCUPRA1/backend
+    rootDir: backend
     buildCommand: npm install && npx prisma generate && npx prisma db push && npx tsx src/prisma/seed.ts
     startCommand: npx tsx src/index.ts
     envVars:
