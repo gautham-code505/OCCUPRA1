@@ -19,50 +19,26 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware — allow all origins for Vercel<->Render communication
-app.use(
-  cors({
-    origin: function (_origin, callback) {
-      callback(null, true);
-    },
-    credentials: true,
-  })
-);
+app.use(cors({ origin: (_o, cb) => cb(null, true), credentials: true }));
 app.use(express.json());
 
-// Initialize IoT Simulation Engine
 const simulationEngine = IoTSimulationEngine.getInstance();
 
-// Server-Sent Events (SSE) Live Stream
+// SSE Stream
 app.get('/api/stream', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
-
   res.write(`data: ${JSON.stringify({ type: 'CONNECTED', state: simulationEngine.getState() })}\n\n`);
-
-  const unsubscribe = simulationEngine.subscribe((eventType, data) => {
-    res.write(`data: ${JSON.stringify({ type: eventType, data })}\n\n`);
-  });
-
-  req.on('close', () => {
-    unsubscribe();
-    res.end();
-  });
+  const unsub = simulationEngine.subscribe((t, d) => res.write(`data: ${JSON.stringify({ type: t, data: d })}\n\n`));
+  req.on('close', () => { unsub(); res.end(); });
 });
 
-// Health check
-app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({
-    status: 'ONLINE',
-    system: 'OCCUPRA AI Engine',
-    timestamp: new Date().toISOString(),
-    simulation: simulationEngine.getState(),
-  });
-});
+// Health
+app.get('/api/health', (_req, res) => res.json({ status: 'ONLINE', timestamp: new Date().toISOString() }));
 
-// API Routes
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/occupancy', occupancyRoutes);
@@ -74,37 +50,27 @@ app.use('/api/sensors', sensorRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/simulation', simulationRoutes);
 
-// Global Error Handler
 app.use((err: any, _req: Request, res: Response, _next: any) => {
-  console.error('Unhandled server error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
+  res.status(500).json({ error: err.message || 'Internal Server Error' });
 });
 
 // Auto-seed if empty, then start
 async function startServer() {
   try {
-    // Push schema
     const { execSync } = await import('child_process');
     try { execSync('npx prisma db push --skip-generate', { stdio: 'inherit' }); } catch (_) {}
-
-    // Seed if no data
     const count = await prisma.resource.count();
     if (count === 0) {
-      console.log('🌱 No resources found — auto-seeding database...');
+      console.log('🌱 Auto-seeding...');
       const { seedDatabase } = await import('./prisma/seed');
       await seedDatabase();
-      console.log('✅ Auto-seed complete!');
-    } else {
-      console.log(`✅ Database ready with ${count} resources.`);
+      console.log('✅ Seeded!');
     }
-  } catch (err) {
-    console.error('Startup seed check failed:', err);
-  }
+  } catch (e) { console.error('Seed failed:', e); }
 
-  app.listen(PORT, () => {
-    console.log(`🚀 OCCUPRA Backend listening on http://localhost:${PORT}`);
-    console.log(`📡 SSE stream at http://localhost:${PORT}/api/stream`);
-  });
+  app.listen(PORT, () => console.log(`🚀 OCCUPRA running on port ${PORT}`));
 }
 
 startServer();
+
+export default app;
