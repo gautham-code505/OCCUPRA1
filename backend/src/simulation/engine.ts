@@ -113,14 +113,21 @@ export class IoTSimulationEngine {
           entryDelta = Math.floor(Math.random() * 4) + 5; // +5 to +8 people
           exitDelta = Math.floor(Math.random() * 2);      // 0 to 1 exit
         } else {
-          // Normal realistic drift
-          const randomFactor = (Math.random() - 0.48); // slightly bias forward during day
-          entryDelta = Math.max(0, Math.round(sensor.entryRate + (Math.random() * 4 - 2)));
-          exitDelta = Math.max(0, Math.round(sensor.exitRate + (Math.random() * 4 - 2)));
+          // Mean-reverting simulation toward time-of-day target
+          const hour = new Date().getHours();
+          const isWeekend = [0, 6].includes(new Date().getDay());
+          const targetPct = this.getTargetOccupancyPct(res.type, hour, isWeekend);
+          const targetOccupancy = Math.round((targetPct / 100) * res.capacity);
 
-          // Limit step change to 1-3 people per tick to guarantee smooth realism
-          const step = Math.sign(entryDelta - exitDelta) * Math.min(3, Math.abs(entryDelta - exitDelta));
-          if (step > 0) entryDelta = step; else { exitDelta = Math.abs(step); entryDelta = 0; }
+          // Gentle drift toward target (max ±3 people/tick)
+          const diff = targetOccupancy - res.currentOccupancy;
+          let netChange = Math.sign(diff) * Math.min(3, Math.abs(diff));
+          // Add realistic noise: ±1 person
+          netChange += Math.round(Math.random() * 2 - 1);
+          netChange = Math.max(-3, Math.min(3, netChange));
+
+          if (netChange > 0) { entryDelta = netChange; exitDelta = 0; }
+          else { entryDelta = 0; exitDelta = Math.abs(netChange); }
         }
 
         const netChange = entryDelta - exitDelta;
@@ -146,8 +153,8 @@ export class IoTSimulationEngine {
         const updatedSensor = await prisma.sensor.update({
           where: { id: sensor.id },
           data: {
-            entryRate: Math.max(0, sensor.entryRate + (Math.floor(Math.random() * 3) - 1)),
-            exitRate: Math.max(0, sensor.exitRate + (Math.floor(Math.random() * 3) - 1)),
+            entryRate: Math.max(0, Math.min(30, sensor.entryRate + (Math.floor(Math.random() * 3) - 1))),
+            exitRate: Math.max(0, Math.min(25, sensor.exitRate + (Math.floor(Math.random() * 3) - 1))),
             lastHeartbeat: new Date(),
           },
         });
@@ -174,6 +181,29 @@ export class IoTSimulationEngine {
     } catch (err) {
       console.error('[IoT Simulation Tick Error]', err);
     }
+  }
+
+  /**
+   * Returns a realistic target occupancy % for a resource type at a given hour
+   */
+  private getTargetOccupancyPct(type: string, hour: number, isWeekend: boolean): number {
+    const patterns: Record<string, number[]> = {
+      LIBRARY:        [5, 5, 5, 5, 5, 8, 15, 28, 45, 58, 65, 72, 78, 75, 70, 78, 82, 76, 68, 55, 42, 30, 18, 8],
+      COMPUTER_LAB:   [3, 3, 3, 3, 3, 5, 12, 35, 58, 72, 82, 88, 84, 78, 82, 86, 80, 68, 52, 38, 24, 12, 5, 3],
+      STUDY_ROOM:     [3, 3, 3, 3, 3, 5, 10, 20, 35, 42, 48, 55, 58, 52, 48, 55, 62, 60, 54, 42, 32, 22, 12, 5],
+      CANTEEN:        [5, 5, 5, 5, 5, 8, 15, 55, 80, 72, 85, 92, 95, 88, 72, 65, 58, 55, 65, 72, 52, 35, 18, 8],
+      SEMINAR_HALL:   [3, 3, 3, 3, 3, 5, 8, 15, 25, 35, 40, 42, 38, 32, 30, 28, 25, 18, 12, 8, 5, 3, 3, 3],
+      CLASSROOM:      [3, 3, 3, 3, 3, 5, 10, 30, 55, 72, 80, 82, 78, 72, 68, 75, 70, 52, 38, 22, 12, 5, 3, 3],
+      RESEARCH_LAB:   [3, 3, 3, 3, 3, 5, 8, 18, 32, 45, 55, 60, 58, 55, 58, 62, 60, 55, 48, 38, 28, 18, 10, 5],
+      ACTIVITY_CENTER:[3, 3, 3, 3, 3, 5, 8, 15, 25, 35, 42, 48, 52, 55, 52, 55, 58, 62, 65, 60, 52, 42, 28, 12],
+    };
+    const pattern = patterns[type] || patterns.LIBRARY;
+    let target = pattern[Math.min(hour, 23)];
+    if (isWeekend && ['LIBRARY', 'COMPUTER_LAB', 'CLASSROOM', 'SEMINAR_HALL'].includes(type)) {
+      target = Math.round(target * 0.55);
+    }
+    const variance = (Math.random() - 0.5) * 8;
+    return Math.max(3, Math.min(97, target + variance));
   }
 
   /**

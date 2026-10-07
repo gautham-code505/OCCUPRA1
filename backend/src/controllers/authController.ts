@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'campuspulse_super_secret_jwt_key_2
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, name, department, role = 'STUDENT' } = req.body;
+    const { email, password, name, department, phoneNo, rollNo, role = 'STUDENT' } = req.body;
 
     if (!email || !password || !name) {
       res.status(400).json({ error: 'Email, password, and name are required' });
@@ -27,7 +27,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         email,
         password: hashedPassword,
         name,
-        department: department || 'General Studies',
+        department: department || null,
+        phoneNo: phoneNo || null,
+        rollNo: rollNo || null,
         role: role.toUpperCase() === 'ADMIN' ? 'ADMIN' : 'STUDENT',
       },
       select: {
@@ -36,6 +38,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         name: true,
         role: true,
         department: true,
+        phoneNo: true,
+        rollNo: true,
         createdAt: true,
       },
     });

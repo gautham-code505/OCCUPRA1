@@ -118,14 +118,14 @@ export class RecommendationService {
       const sensor = res.sensors[0];
       const entryRate = sensor ? sensor.entryRate : 4;
       const exitRate = sensor ? sensor.exitRate : 2;
-      const preds = PredictionService.calculatePredictions(
+      const preds = await PredictionService.calculatePredictions(
         res.occupancyPercent,
         res.capacity,
         entryRate,
         exitRate,
         res.type
       );
-      const oneHourPred = preds.find((p) => p.timeOffsetMinutes === 60)?.predictedPercent || res.occupancyPercent;
+      const oneHourPred = preds.find((p: any) => p.timeOffsetMinutes === 60)?.predictedPercent || res.occupancyPercent;
 
       if (oneHourPred < 50) {
         score += 8;

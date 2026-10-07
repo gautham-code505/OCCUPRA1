@@ -45,16 +45,18 @@ export const getMyBookings = async (req: AuthRequest, res: Response): Promise<vo
 export const createBooking = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { resourceId, date = 'Today', startTime = '02:00 PM', endTime = '03:00 PM', seats = 1, purpose = 'Study' } = req.body;
-    let userId = req.user?.id;
+    const userId = req.user?.id;
 
     if (!userId) {
-      // Demo fallback: default to student user
-      const student = await prisma.user.findFirst({ where: { role: 'STUDENT' } });
-      if (student) userId = student.id;
-      else {
-        res.status(400).json({ error: 'User must be authenticated' });
-        return;
-      }
+      res.status(401).json({ error: 'You must be logged in to make a booking' });
+      return;
+    }
+
+    // Check if user still exists (handles cases where DB was re-seeded and old token is used)
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(401).json({ error: 'Session expired or invalid user. Please log out and log in again.' });
+      return;
     }
 
     const resource = await prisma.resource.findUnique({ where: { id: resourceId } });

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-async function main() {
+export async function seedDatabase() {
   console.log('🌱 Starting CampusPulse AI database seeding...');
 
   // 1. Clean existing records
@@ -45,7 +45,7 @@ async function main() {
   console.log('✅ Seeded Users (Student & Admin)');
 
   // 3. Define 15 Campus Resources
-  // Geographic anchor: Realistic campus layout centered around [12.9716, 77.5946]
+  // Geographic anchor: Realistic campus layout centered around [10.8290, 77.0592]
   const resourcesData = [
     {
       code: 'LIB-MAIN',
@@ -60,8 +60,8 @@ async function main() {
       facilities: 'Wi-Fi, AC, Charging Points, Printing, Silent Zone, Discussion Pods',
       description: 'The main academic hub featuring 4 reading zones, silent study carrels, and digital archives.',
       currentCrowdStatus: 'MODERATE',
-      latitude: 12.9722,
-      longitude: 77.5938,
+      latitude: 10.8296,
+      longitude: 77.0584,
       floor: 'Floor 1-3',
       building: 'Knowledge Center',
       distanceMeters: 180,
@@ -82,8 +82,8 @@ async function main() {
       facilities: 'Kindle Stations, E-Library Terminals, Wi-Fi, AC, Ergonomic Lounges',
       description: 'Quiet multimedia and e-journal reading environment equipped with high-res tablets.',
       currentCrowdStatus: 'QUIET',
-      latitude: 12.9729,
-      longitude: 77.5942,
+      latitude: 10.8303,
+      longitude: 77.0588,
       floor: 'Floor 2',
       building: 'Knowledge Center Annex',
       distanceMeters: 220,
@@ -104,8 +104,8 @@ async function main() {
       facilities: 'Desktop PCs, Dual Monitors, High-speed LAN, GPU Workstations, Projector',
       description: 'Core programming lab hosting algorithms and web development coursework.',
       currentCrowdStatus: 'CROWDED',
-      latitude: 12.9712,
-      longitude: 77.5955,
+      latitude: 10.8286,
+      longitude: 77.0601,
       floor: 'Ground Floor',
       building: 'Turing Technology Block',
       distanceMeters: 140,
@@ -126,8 +126,8 @@ async function main() {
       facilities: 'Desktop PCs, Linux Environment, Python Stack, Wi-Fi, AC',
       description: 'Open software engineering lab configured with Linux Fedora workstations.',
       currentCrowdStatus: 'MODERATE',
-      latitude: 12.9714,
-      longitude: 77.5960,
+      latitude: 10.8288,
+      longitude: 77.0606,
       floor: 'Floor 1',
       building: 'Turing Technology Block',
       distanceMeters: 160,
@@ -148,8 +148,8 @@ async function main() {
       facilities: 'Desktop PCs, Wi-Fi, AC, Projector, Whiteboard',
       description: 'High-availability lab with underutilized capacity during peak morning periods.',
       currentCrowdStatus: 'MODERATE',
-      latitude: 12.9708,
-      longitude: 77.5962,
+      latitude: 10.8282,
+      longitude: 77.0608,
       floor: 'Floor 2',
       building: 'Turing Technology Block',
       distanceMeters: 190,
@@ -170,8 +170,8 @@ async function main() {
       facilities: 'NVIDIA RTX 4090 Rigs, CUDA Toolkits, AC, Dual 4K Displays, 10GbE Network',
       description: 'Specialized deep learning and data analytics cluster for student capstone research.',
       currentCrowdStatus: 'MODERATE',
-      latitude: 12.9705,
-      longitude: 77.5950,
+      latitude: 10.8279,
+      longitude: 77.0596,
       floor: 'Floor 3',
       building: 'Innovation Hub',
       distanceMeters: 240,
@@ -192,8 +192,8 @@ async function main() {
       facilities: 'Whiteboard, Quiet Zone, AC, Universal Power Outlets, Natural Light',
       description: 'Silent study cubicles ideal for individual deep focus and midterm prep.',
       currentCrowdStatus: 'QUIET',
-      latitude: 12.9725,
-      longitude: 77.5932,
+      latitude: 10.8299,
+      longitude: 77.0578,
       floor: 'Floor 1',
       building: 'Student Commons',
       distanceMeters: 120,
@@ -214,8 +214,8 @@ async function main() {
       facilities: 'Ergonomic Herman Miller Seating, Wi-Fi, Silent Zone, Sound Dampening',
       description: 'Ultra-quiet study sanctum with scenic courtyard views and ample power sockets.',
       currentCrowdStatus: 'QUIET',
-      latitude: 12.9727,
-      longitude: 77.5935,
+      latitude: 10.8301,
+      longitude: 77.0581,
       floor: 'Floor 1',
       building: 'Student Commons',
       distanceMeters: 150,
@@ -236,8 +236,8 @@ async function main() {
       facilities: 'Collaborative Pods, 65-inch Presentation Display, Wi-Fi, AC',
       description: 'Collaborative group study zone equipped with screen-sharing cables and whiteboard.',
       currentCrowdStatus: 'QUIET',
-      latitude: 12.9730,
-      longitude: 77.5930,
+      latitude: 10.8304,
+      longitude: 77.0576,
       floor: 'Floor 2',
       building: 'Student Commons',
       distanceMeters: 175,
@@ -258,8 +258,8 @@ async function main() {
       facilities: 'Food Stalls, Specialty Coffee Bar, Outdoor Patio, Quick Checkout, Wi-Fi',
       description: 'Campus central dining hall serving breakfast, hot lunches, and specialty beverages.',
       currentCrowdStatus: 'CROWDED',
-      latitude: 12.9710,
-      longitude: 77.5935,
+      latitude: 10.8284,
+      longitude: 77.0581,
       floor: 'Ground Floor',
       building: 'Campus Plaza',
       distanceMeters: 90,
@@ -280,8 +280,8 @@ async function main() {
       facilities: 'Acoustic Soundstage, Dual 4K Projectors, Dolby Audio, Stage Podium, AC',
       description: 'State-of-the-art auditorium for symposiums, guest lectures, and hackathons.',
       currentCrowdStatus: 'QUIET',
-      latitude: 12.9735,
-      longitude: 77.5950,
+      latitude: 10.8309,
+      longitude: 77.0596,
       floor: 'Ground Floor',
       building: 'Convention Wing',
       distanceMeters: 310,
@@ -302,8 +302,8 @@ async function main() {
       facilities: 'Interactive Smart Boards, Wi-Fi, Stepped Tier Seating, Podium Audio',
       description: 'Modern lecture halls for departmental engineering and management lectures.',
       currentCrowdStatus: 'MODERATE',
-      latitude: 12.9718,
-      longitude: 77.5925,
+      latitude: 10.8292,
+      longitude: 77.0571,
       floor: 'Floor 3',
       building: 'Academic Block A',
       distanceMeters: 210,
@@ -324,8 +324,8 @@ async function main() {
       facilities: 'Whiteboards, Ceiling Projector, Natural Ventilation, Charging Outlets',
       description: 'Tutorial rooms and seminar lecture classrooms for sciences and humanities.',
       currentCrowdStatus: 'MODERATE',
-      latitude: 12.9722,
-      longitude: 77.5920,
+      latitude: 10.8296,
+      longitude: 77.0566,
       floor: 'Floor 2',
       building: 'Academic Block B',
       distanceMeters: 260,
@@ -346,8 +346,8 @@ async function main() {
       facilities: 'Clean Bench, Oscilloscopes, Embedded Dev Kits, Biometric Keycard Access',
       description: 'Postgraduate IoT and embedded systems prototyping laboratory.',
       currentCrowdStatus: 'MODERATE',
-      latitude: 12.9702,
-      longitude: 77.5945,
+      latitude: 10.8276,
+      longitude: 77.0591,
       floor: 'Basement 1',
       building: 'Innovation Hub',
       distanceMeters: 280,
@@ -368,8 +368,8 @@ async function main() {
       facilities: 'Lounge Sofas, Table Tennis, Charging Hubs, Sound System, Indoor Turf',
       description: 'Recreation zone for student clubs, hackathon ideation, and downtime.',
       currentCrowdStatus: 'MODERATE',
-      latitude: 12.9705,
-      longitude: 77.5930,
+      latitude: 10.8279,
+      longitude: 77.0576,
       floor: 'Floor 1',
       building: 'Sports & Cultural Complex',
       distanceMeters: 170,
@@ -565,11 +565,14 @@ async function main() {
   console.log('✨ CampusPulse AI database seeding completed successfully!');
 }
 
-main()
-  .catch((e) => {
-    console.error('❌ Seeding error:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Run directly
+if (require.main === module || import.meta.url === `file://${process.argv[1]}`) {
+  seedDatabase()
+    .catch((e) => {
+      console.error('❌ Seeding error:', e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

@@ -6,7 +6,7 @@ const router = Router();
 
 router.get('/', getBookings);
 router.get('/my', authenticate, getMyBookings);
-router.post('/', createBooking);
-router.delete('/:id', cancelBooking);
+router.post('/', authenticate, createBooking);
+router.delete('/:id', authenticate, cancelBooking);
 
 export default router;
