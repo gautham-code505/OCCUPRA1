@@ -1,0 +1,49 @@
+{
+  "features": [
+    "hour",
+    "day_of_week",
+    "is_weekend",
+    "capacity",
+    "current_occupancy_percent",
+    "entry_rate",
+    "exit_rate",
+    "type_ACTIVITY_CENTER",
+    "type_CANTEEN",
+    "type_CLASSROOM",
+    "type_COMPUTER_LAB",
+    "type_LIBRARY",
+    "type_RESEARCH_LAB",
+    "type_SEMINAR_HALL",
+    "type_STUDY_ROOM"
+  ],
+  "horizons": {
+    "30m": "future_30m_percent",
+    "1h": "future_1h_percent",
+    "2h": "future_2h_percent",
+    "4h": "future_4h_percent"
+  },
+  "metrics": {
+    "30m": {
+      "MAE": 3.24,
+      "R2": 0.9712,
+      "sample_test_size": 1260
+    },
+    "1h": {
+      "MAE": 4.7,
+      "R2": 0.9399,
+      "sample_test_size": 1260
+    },
+    "2h": {
+      "MAE": 6.93,
+      "R2": 0.8695,
+      "sample_test_size": 1260
+    },
+    "4h": {
+      "MAE": 9.04,
+      "R2": 0.7792,
+      "sample_test_size": 1260
+    }
+  },
+  "trained_at": "2026-10-07T12:13:14.792123",
+  "algorithm": "GradientBoostingRegressor (scikit-learn)"
+}

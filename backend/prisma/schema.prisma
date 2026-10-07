@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  name          String
+  role          String         @default("STUDENT") // STUDENT | ADMIN
+  department    String         @default("Computer Science")
+  avatarUrl     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  bookings      Booking[]
+  notifications Notification[]
+}
+
+model Resource {
+  id                 String             @id @default(uuid())
+  name               String
+  code               String             @unique
+  type               String             // LIBRARY, COMPUTER_LAB, STUDY_ROOM, CANTEEN, SEMINAR_HALL, CLASSROOM, RESEARCH_LAB, ACTIVITY_CENTER
+  capacity           Int
+  currentOccupancy   Int                @default(0)
+  occupancyPercent   Float              @default(0.0)
+  availableUnits     Int                @default(0)
+  openingTime        String             @default("08:00 AM")
+  closingTime        String             @default("09:00 PM")
+  facilities         String             // Comma-separated or JSON string
+  description        String             @default("")
+  currentCrowdStatus String             @default("QUIET") // QUIET, MODERATE, CROWDED
+  latitude           Float
+  longitude          Float
+  floor              String             @default("Ground Floor")
+  building           String             @default("Main Block")
+  distanceMeters     Int                @default(150)
+  isAvailable        Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  sensors            Sensor[]
+  occupancyRecords   OccupancyRecord[]
+  predictions        Prediction[]
+  bookings           Booking[]
+  notifications      Notification[]
+  insights           Insight[]
+}
+
+model Sensor {
+  id            String    @id @default(uuid())
+  sensorCode    String    @unique
+  resourceId    String
+  resource      Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  status        String    @default("ONLINE") // ONLINE, PAUSED, OFFLINE
+  entryRate     Int       @default(4)
+  exitRate      Int       @default(2)
+  batteryLevel  Int       @default(98)
+  healthPercent Int       @default(98)
+  lastHeartbeat DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model OccupancyRecord {
+  id               String   @id @default(uuid())
+  resourceId       String
+  resource         Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  occupancy        Int
+  occupancyPercent Float
+  entryCount       Int      @default(0)
+  exitCount        Int      @default(0)
+  timestamp        DateTime @default(now())
+}
+
+model Prediction {
+  id                       String   @id @default(uuid())
+  resourceId               String
+  resource                 Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  timeOffsetMinutes        Int      // 30, 60, 120, 240
+  predictedOccupancyPercent Float
+  confidence               Float    @default(0.88)
+  trend                    String   @default("STABLE") // INCREASING, DECREASING, STABLE
+  summary                  String   @default("")
+  createdAt                DateTime @default(now())
+}
+
+model Booking {
+  id          String   @id @default(uuid())
+  bookingCode String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId  String
+  resource    Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  date        String
+  startTime   String
+  endTime     String
+  seats       Int      @default(1)
+  purpose     String   @default("Study")
+  status      String   @default("CONFIRMED") // CONFIRMED, CANCELLED, COMPLETED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId String?
+  resource   Resource? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  type       String    // CROWD, AVAILABILITY, PREDICTION, RECOMMENDATION, BOOKING
+  title      String
+  message    String
+  isRead     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+}
+
+model Insight {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  category    String    // UTILIZATION, PEAK_WARNING, RECOMMENDATION, ANOMALY
+  severity    String    @default("INFO") // INFO, WARNING, CRITICAL
+  resourceId  String?
+  resource    Resource? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+}
