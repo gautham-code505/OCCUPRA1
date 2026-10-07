@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { authAPI } from '../services/api';
 import { Activity, Eye, EyeOff, ArrowRight, Shield, User } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -26,16 +27,7 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
     try {
       if (isRegistering) {
-        // We need to import authAPI for register, but since we didn't, we can fetch it or just use the global api if available. Wait, I'll import it at the top!
-        // Actually, let's use fetch directly or add it to useAuth.
-        // I will just use fetch here to avoid changing useAuth context since it's simpler.
-        const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name, role, phoneNo, rollNo, department })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Registration failed');
+        await authAPI.register({ email, password, name, role, phoneNo, rollNo, department });
         setSuccess('Registration successful! Please sign in.');
         setIsRegistering(false);
         setPassword('');
