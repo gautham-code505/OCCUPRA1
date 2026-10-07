@@ -565,14 +565,12 @@ export async function seedDatabase() {
   console.log('✨ CampusPulse AI database seeding completed successfully!');
 }
 
-// Run directly
-if (require.main === module || import.meta.url === `file://${process.argv[1]}`) {
-  seedDatabase()
-    .catch((e) => {
-      console.error('❌ Seeding error:', e);
-      process.exit(1);
-    })
-    .finally(async () => {
-      await prisma.$disconnect();
-    });
-}
+// Run directly via tsx/node
+seedDatabase()
+  .catch((e) => {
+    console.error('❌ Seeding error:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
