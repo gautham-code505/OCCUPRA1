@@ -54,11 +54,14 @@ IoT Sensor Simulation (Entry/Exit streams)
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18, Vite, TypeScript, Tailwind CSS, Lucide React, Framer Motion, React Leaflet, Recharts
-- **Backend**: Node.js, Express.js, TypeScript, Server-Sent Events (SSE) for real-time live data stream
-- **Database**: Prisma ORM, SQLite (`dev.db` with full seed data)
-- **AI / ML**: Python 3, Scikit-learn (GradientBoostingRegressor), Pandas, NumPy, analytical prediction fallback engine
-- **Authentication**: JWT, bcrypt
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React 18, Vite, TypeScript, Tailwind CSS, Lucide React, Framer Motion, Leaflet.js, Recharts |
+| **Full-Stack Server** | Node.js, Express.js, TypeScript, Server-Sent Events (SSE) live data stream |
+| **Python Backend / Microservices** | Python 3, FastAPI, Uvicorn, WebSockets, Firebase Admin SDK & In-Memory fallback |
+| **Database & ORM** | Prisma ORM, SQLite (`dev.db` with full seed data) & Firestore repository pattern |
+| **Machine Learning** | Scikit-learn (GradientBoostingRegressor), XGBoost, Pandas, NumPy |
+| **Authentication** | JWT, bcrypt, Role-based Access Control (Student / Admin) |
 
 ---
 
@@ -73,35 +76,36 @@ IoT Sensor Simulation (Entry/Exit streams)
 
 ## 🏃 Quick Start Guide
 
-### 1. Clone & Install
+### 1. Clone
 ```bash
 git clone https://github.com/gautham-code505/OCCUPRA1.git
 cd OCCUPRA1
 ```
 
-### 2. Backend Setup
+### 2. Frontend (React + Vite + Tailwind)
+```bash
+cd frontend
+npm install
+npm run dev
+# Running on http://localhost:5173
+```
+
+### 3. Full-Stack Node.js & SSE Backend
 ```bash
 cd backend
 npm install
 npx prisma db push
 npx tsx src/prisma/seed.ts
 npm run dev
-# Backend runs on http://localhost:5000
+# Running on http://localhost:5000
 ```
 
-### 3. Frontend Setup
+### 4. Optional: Python FastAPI Backend & ML Pipeline
 ```bash
-cd ../frontend
-npm install
-npm run dev
-# Frontend runs on http://localhost:5173
-```
-
-### 4. ML Models (Optional - Pretrained models included)
-```bash
-cd ../ml/prediction
-python training/train_model.py
-# Models saved to ml/prediction/model/
+cd backend
+pip install -r requirements.txt
+python run.py
+# Running on http://localhost:8000 (Swagger docs at /docs)
 ```
 
 ---
@@ -109,28 +113,28 @@ python training/train_model.py
 ## 📁 Project Structure
 
 ```
-smartcampus/
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma       # Database schema (User, Resource, Sensor, Booking, etc.)
-│   │   └── seed.ts             # Complete seed data for 15 campus locations
-│   └── src/
-│       ├── controllers/        # 10 Express controllers
-│       ├── services/           # Prediction & recommendation engines
-│       ├── simulation/         # IoT simulation stream engine
-│       ├── routes/             # REST API endpoints
-│       └── index.ts            # Server entry with SSE /api/stream
-├── frontend/
+OCCUPRA1/
+├── frontend/                   # Futuristic React UI
 │   ├── src/
-│   │   ├── components/         # Map, detail panels, sidebar, topbar, core UI
+│   │   ├── components/         # Leaflet Map, detail panel, layout, core UI
 │   │   ├── contexts/           # AuthContext & LiveDataContext (SSE stream)
-│   │   ├── pages/              # Student & Admin pages (12+ complete views)
-│   │   └── services/           # API & SSE services
-├── ml/
+│   │   ├── pages/              # 12+ student and admin dashboard views
+│   │   └── services/           # API and SSE client services
+├── backend/                    # Dual-capable Backend Architecture
+│   ├── src/                    # TypeScript Express + SSE Simulation Engine
+│   │   ├── controllers/        # 10 API controllers
+│   │   ├── services/           # Prediction & recommendation engines
+│   │   ├── simulation/         # IoT simulation stream engine
+│   │   └── prisma/             # Prisma schema & seed data
+│   └── app/                    # Python FastAPI service
+│       ├── api/                # FastAPI routers
+│       ├── ml/                 # XGBoost / Scikit-learn model trainer & evaluator
+│       └── simulation/         # Python virtual IoT simulation
+├── ml/                         # Standalone ML Training Pipeline
 │   └── prediction/
 │       ├── data/               # Historical campus dataset generator
-│       ├── training/           # GradientBoostingRegressor model trainer
-│       └── model/              # 4 trained models (+30m, +1h, +2h, +4h)
+│       ├── training/           # GradientBoostingRegressor trainer
+│       └── model/              # Serialized model artifacts (.joblib)
 └── README.md
 ```
 
@@ -140,3 +144,4 @@ smartcampus/
 - **Realistic IoT Simulation**: Non-random diurnal velocity algorithm mimicking natural class transitions, lunch peaks, and study habits.
 - **Glassmorphism Cyber Aesthetic**: Clean futuristic UI inspired by smart-city digital twins and mission control rooms.
 - **Fault-Tolerant Realtime Sync**: SSE stream provides smooth live updates without WebSocket handshake latency.
+- **Multi-Horizon ML Forecasting**: Predicts occupancy at 30m, 1h, 2h, and 4h horizons with high confidence.

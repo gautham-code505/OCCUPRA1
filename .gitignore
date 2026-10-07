@@ -15,10 +15,17 @@ __pycache__/
 .venv/
 venv/
 env/
+.pytest_cache/
+.coverage
 
-# Environment variables
+# Secrets & Environment Files
 .env.local
 .env.*.local
+backend/firebase-credentials.json
+backend/firebase-service-account.json
+*serviceAccountKey*.json
+*service-account*.json
+firebase-credentials.json
 
 # Logs
 *.log
