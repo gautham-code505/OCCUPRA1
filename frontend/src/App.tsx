@@ -23,6 +23,9 @@ import { ResourceUtilizationPage } from './pages/ResourceUtilizationPage';
 import { AIInsightsPage } from './pages/AIInsightsPage';
 import { ResourceManagementPage } from './pages/ResourceManagementPage';
 import { BookingManagementPage } from './pages/BookingManagementPage';
+import { LiveCampusMonitoringPage } from './pages/LiveCampusMonitoringPage';
+import { PredictionAnalyticsPage } from './pages/PredictionAnalyticsPage';
+import { SystemSettingsPage } from './pages/SystemSettingsPage';
 
 const App: React.FC = () => {
   return (
@@ -52,14 +55,15 @@ const App: React.FC = () => {
             <Route element={<RequireAuth adminOnly />}>
               <Route element={<AppLayout />}>
                 <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/monitoring" element={<CampusMapPage />} />
+                <Route path="/admin/monitoring" element={<LiveCampusMonitoringPage />} />
                 <Route path="/admin/sensors" element={<IoTSensorPage />} />
                 <Route path="/admin/resources" element={<ResourceManagementPage />} />
                 <Route path="/admin/analytics" element={<CrowdAnalyticsPage />} />
+                <Route path="/admin/predictions" element={<PredictionAnalyticsPage />} />
                 <Route path="/admin/utilization" element={<ResourceUtilizationPage />} />
                 <Route path="/admin/insights" element={<AIInsightsPage />} />
                 <Route path="/admin/bookings" element={<BookingManagementPage />} />
-                <Route path="/admin/settings" element={<ProfilePage />} />
+                <Route path="/admin/settings" element={<SystemSettingsPage />} />
               </Route>
             </Route>
 

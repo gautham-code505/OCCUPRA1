@@ -34,6 +34,7 @@ const adminNav: NavItem[] = [
   { label: 'IoT Sensors', path: '/admin/sensors', icon: <Cpu size={18} /> },
   { label: 'Resources', path: '/admin/resources', icon: <Database size={18} /> },
   { label: 'Crowd Analytics', path: '/admin/analytics', icon: <BarChart3 size={18} /> },
+  { label: 'Prediction Analytics', path: '/admin/predictions', icon: <TrendingUp size={18} /> },
   { label: 'Utilization', path: '/admin/utilization', icon: <Zap size={18} /> },
   { label: 'AI Insights', path: '/admin/insights', icon: <Lightbulb size={18} /> },
   { label: 'Bookings Mgmt', path: '/admin/bookings', icon: <CalendarCheck size={18} /> },
