@@ -54,59 +54,57 @@ export const ResourceManagementPage: React.FC = () => {
     r.type.toLowerCase().includes(search.toLowerCase())
   );
 
-  const ResourceForm = () => (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass-card rounded-2xl border border-white/15 p-6 w-full max-w-lg">
-        <h2 className="text-lg font-bold text-white mb-5">{editResource ? 'Edit Resource' : 'Add New Resource'}</h2>
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            { label: 'Name', key: 'name', type: 'text' },
-            { label: 'Code', key: 'code', type: 'text' },
-            { label: 'Building', key: 'building', type: 'text' },
-            { label: 'Floor', key: 'floor', type: 'text' },
-            { label: 'Capacity', key: 'capacity', type: 'number' },
-            { label: 'Distance (m)', key: 'distanceMeters', type: 'number' },
-          ].map(f => (
-            <div key={f.key}>
-              <label className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">{f.label}</label>
-              <input
-                type={f.type}
-                value={(form as any)[f.key]}
-                onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
-              />
-            </div>
-          ))}
-          <div>
-            <label className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Type</label>
-            <select value={form.type} onChange={e => setForm(prev => ({ ...prev, type: e.target.value }))}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50">
-              {['LIBRARY','COMPUTER_LAB','STUDY_ROOM','CANTEEN','SEMINAR_HALL','CLASSROOM','RESEARCH_LAB','ACTIVITY_CENTER'].map(t => (
-                <option key={t} value={t}>{getResourceTypeLabel(t)}</option>
-              ))}
-            </select>
-          </div>
-          <div className="col-span-2">
-            <label className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Facilities (comma-separated)</label>
-            <input type="text" value={form.facilities} onChange={e => setForm(prev => ({ ...prev, facilities: e.target.value }))}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50" />
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={() => { setShowAdd(false); setEditResource(null); }}
-            className="flex-1 py-2.5 rounded-xl bg-white/5 text-slate-300 hover:bg-white/10 text-sm transition-all">Cancel</button>
-          <button onClick={handleSave} disabled={saving}
-            className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all disabled:opacity-50">
-            {saving ? 'Saving…' : editResource ? 'Update Resource' : 'Add Resource'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-6">
-      {(showAdd || editResource) && <ResourceForm />}
+      {(showAdd || editResource) && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="glass-card rounded-2xl border border-white/15 p-6 w-full max-w-lg">
+            <h2 className="text-lg font-bold text-white mb-5">{editResource ? 'Edit Resource' : 'Add New Resource'}</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: 'Name', key: 'name', type: 'text' },
+                { label: 'Code', key: 'code', type: 'text' },
+                { label: 'Building', key: 'building', type: 'text' },
+                { label: 'Floor', key: 'floor', type: 'text' },
+                { label: 'Capacity', key: 'capacity', type: 'number' },
+                { label: 'Distance (m)', key: 'distanceMeters', type: 'number' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">{f.label}</label>
+                  <input
+                    type={f.type}
+                    value={(form as any)[f.key]}
+                    onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                  />
+                </div>
+              ))}
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Type</label>
+                <select value={form.type} onChange={e => setForm(prev => ({ ...prev, type: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50">
+                  {['LIBRARY','COMPUTER_LAB','STUDY_ROOM','CANTEEN','SEMINAR_HALL','CLASSROOM','RESEARCH_LAB','ACTIVITY_CENTER'].map(t => (
+                    <option key={t} value={t}>{getResourceTypeLabel(t)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Facilities (comma-separated)</label>
+                <input type="text" value={form.facilities} onChange={e => setForm(prev => ({ ...prev, facilities: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowAdd(false); setEditResource(null); }}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 text-slate-300 hover:bg-white/10 text-sm transition-all">Cancel</button>
+              <button onClick={handleSave} disabled={saving}
+                className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all disabled:opacity-50">
+                {saving ? 'Saving…' : editResource ? 'Update Resource' : 'Add Resource'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <div>

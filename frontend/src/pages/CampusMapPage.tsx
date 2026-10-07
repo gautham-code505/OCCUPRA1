@@ -44,7 +44,7 @@ export const CampusMapPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            🗺️ Interactive Campus Map
+            🗺️ Interactive Campus Map — Sri Eshwar College of Engineering, Coimbatore
           </h1>
           <p className="text-slate-400 text-sm">{filtered.length} resources visible · Click a marker to inspect</p>
         </div>

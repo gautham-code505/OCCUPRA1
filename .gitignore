@@ -19,8 +19,11 @@ env/
 .coverage
 
 # Secrets & Environment Files
+.env
 .env.local
 .env.*.local
+*.db
+*.db-journal
 backend/firebase-credentials.json
 backend/firebase-service-account.json
 *serviceAccountKey*.json

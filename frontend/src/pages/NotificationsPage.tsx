@@ -22,7 +22,7 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export const NotificationsPage: React.FC = () => {
-  const { notifications } = useLiveData();
+  const { notifications, markAllReadLocally } = useLiveData();
   const [filter, setFilter] = useState<string>('ALL');
   const [markedAll, setMarkedAll] = useState(false);
 
@@ -31,6 +31,7 @@ export const NotificationsPage: React.FC = () => {
 
   const handleMarkAll = async () => {
     await notificationAPI.markAllRead();
+    markAllReadLocally();
     setMarkedAll(true);
   };
 

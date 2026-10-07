@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { LiveDataProvider } from './contexts/LiveDataContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { RequireAuth } from './components/auth/RequireAuth';
 import { AppLayout } from './components/layout/AppLayout';
 
@@ -30,8 +31,9 @@ import { SystemSettingsPage } from './pages/SystemSettingsPage';
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <LiveDataProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <LiveDataProvider>
           <Routes>
             {/* Public */}
             <Route path="/" element={<LandingPage />} />
@@ -70,8 +72,9 @@ const App: React.FC = () => {
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </LiveDataProvider>
-      </AuthProvider>
+          </LiveDataProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };

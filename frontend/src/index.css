@@ -56,3 +56,67 @@
   background: #0d1527 !important;
   font-family: 'Inter', sans-serif;
 }
+
+/* ============================================
+   LIGHT MODE OVERRIDES
+   ============================================ */
+html.light-mode {
+  --bg-base: #f0f4ff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-color: rgba(0, 0, 0, 0.08);
+}
+
+html.light-mode body {
+  background-color: #e8eef8;
+  color: #0f172a;
+}
+
+html.light-mode .glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+html.light-mode aside {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-right-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light-mode .text-white { color: #0f172a !important; }
+html.light-mode .text-slate-400 { color: #64748b !important; }
+html.light-mode .text-slate-500 { color: #94a3b8 !important; }
+html.light-mode .text-slate-300 { color: #334155 !important; }
+html.light-mode .text-slate-600 { color: #94a3b8 !important; }
+
+html.light-mode .bg-\[\#060a14\] { background-color: #e8eef8 !important; }
+html.light-mode .bg-\[\#0d1527\] { background-color: #f8faff !important; }
+
+html.light-mode input,
+html.light-mode select,
+html.light-mode textarea {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+}
+
+html.light-mode input::placeholder,
+html.light-mode textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light-mode .bg-white\/5 { background: rgba(0,0,0,0.04) !important; }
+html.light-mode .bg-white\/8 { background: rgba(0,0,0,0.05) !important; }
+html.light-mode .bg-white\/10 { background: rgba(0,0,0,0.06) !important; }
+html.light-mode .border-white\/5 { border-color: rgba(0,0,0,0.06) !important; }
+html.light-mode .border-white\/8 { border-color: rgba(0,0,0,0.07) !important; }
+html.light-mode .border-white\/10 { border-color: rgba(0,0,0,0.08) !important; }
+html.light-mode .border-white\/20 { border-color: rgba(0,0,0,0.12) !important; }
+
+html.light-mode .leaflet-container {
+  background: #e8eef8 !important;
+}
+
+::-webkit-scrollbar-track { background: rgba(9, 15, 29, 0.8); }
+html.light-mode ::-webkit-scrollbar-track { background: rgba(200, 215, 240, 0.8); }

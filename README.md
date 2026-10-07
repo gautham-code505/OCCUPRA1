@@ -1,16 +1,16 @@
-# 🏛️ CAMPUSPULSE AI
-> **"Smart Campus Resource Finder & Crowd Predictor"**  
+# 🏛️ OCCUPRA
+> **"Smart Campus Occupancy & Resource Intelligence"**  
 > *Tagline: "Find. Predict. Optimize. — Your Campus, Smarter."*
 
 Built for Hackathon Theme: **Smart Campus & IoT Simulation**
 
 ---
 
-## ⚡ What is CampusPulse AI?
+## ⚡ What is OCCUPRA?
 
 Students waste hours physically checking libraries, computer labs, classrooms, and study rooms to find quiet spaces. During peak hours, facilities become overcrowded while others sit underutilized.
 
-**CampusPulse AI** is a futuristic **Smart Campus Digital Twin & IoT Command Center** that brings real-time visibility, ML predictive forecasting, and intelligent resource recommendations to campus facilities.
+**OCCUPRA** is a futuristic **Smart Campus Digital Twin & IoT Command Center** that brings real-time visibility, ML predictive forecasting, and intelligent resource recommendations to campus facilities.
 
 ```
 IoT Sensor Simulation (Entry/Exit streams)

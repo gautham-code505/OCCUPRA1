@@ -3,10 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Map, Activity, BookOpen, Brain, Lightbulb,
   CalendarCheck, Bell, User, Settings, ChevronLeft, ChevronRight,
-  Shield, Cpu, BarChart3, Zap, Database, LogOut, TrendingUp, Eye
+  Shield, Cpu, BarChart3, Zap, Database, LogOut, TrendingUp, Eye, Sun, Moon
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLiveData } from '../../contexts/LiveDataContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { cn } from '../../utils/helpers';
 
 interface NavItem {
@@ -44,6 +45,7 @@ const adminNav: NavItem[] = [
 export const Sidebar: React.FC = () => {
   const { user, logout, isAdmin } = useAuth();
   const { unreadCount, isConnected } = useLiveData();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -62,7 +64,7 @@ export const Sidebar: React.FC = () => {
         </div>
         {!collapsed && (
           <div>
-            <div className="text-sm font-bold text-white tracking-tight leading-none">CAMPUSPULSE</div>
+            <div className="text-sm font-bold text-white tracking-tight leading-none">OCCUPRA</div>
             <div className="text-[10px] text-cyan-400 tracking-widest font-semibold mt-0.5">AI ENGINE</div>
           </div>
         )}
@@ -139,6 +141,18 @@ export const Sidebar: React.FC = () => {
             </div>
           </div>
         )}
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          className={cn(
+            'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-all mb-1',
+            collapsed && 'justify-center'
+          )}
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-blue-400" />}
+          {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+        </button>
         <button
           onClick={() => { logout(); navigate('/'); }}
           className={cn(

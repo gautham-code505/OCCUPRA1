@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLiveData } from '../contexts/LiveDataContext';
-import { Activity, AlertTriangle } from 'lucide-react';
+import { Activity, AlertTriangle, Sparkles } from 'lucide-react';
 import { LiveBadge } from '../components/ui/CoreComponents';
 import { getCrowdGlow, getResourceTypeIcon, getResourceTypeLabel } from '../utils/helpers';
+import { ResourceDetailPanel } from '../components/resource/ResourceDetailPanel';
+import { Resource } from '../types';
 
 const FILTER_TYPES = ['ALL', 'LIBRARY', 'COMPUTER_LAB', 'STUDY_ROOM', 'CANTEEN', 'SEMINAR_HALL', 'CLASSROOM', 'RESEARCH_LAB', 'ACTIVITY_CENTER'];
 
 export const HeatmapPage: React.FC = () => {
   const { resources, lastUpdate } = useLiveData();
   const [filter, setFilter] = useState('ALL');
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const navigate = useNavigate();
 
   const filtered = resources.filter(r => filter === 'ALL' || r.type === filter);
 
@@ -23,7 +28,7 @@ export const HeatmapPage: React.FC = () => {
     : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
@@ -35,7 +40,12 @@ export const HeatmapPage: React.FC = () => {
             {lastUpdate && ` · Updated ${Math.round((Date.now() - lastUpdate.getTime()) / 1000)}s ago`}
           </p>
         </div>
-        <LiveBadge />
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/recommendation')} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors">
+            <Sparkles size={16} /> AI Recommendation
+          </button>
+          <LiveBadge />
+        </div>
       </div>
 
       {/* Filter + Legend */}
@@ -104,7 +114,8 @@ export const HeatmapPage: React.FC = () => {
           return (
             <div
               key={r.id}
-              className="rounded-2xl border transition-all duration-700 hover:scale-105 cursor-pointer overflow-hidden"
+              onClick={() => setSelectedResource(r)}
+              className="rounded-2xl border transition-all duration-700 hover:scale-105 cursor-pointer overflow-hidden relative group"
               style={{
                 background: `${baseColor}${alpha.toFixed(2)})`,
                 borderColor: `${baseColor}0.4)`,
@@ -150,6 +161,10 @@ export const HeatmapPage: React.FC = () => {
                   <span className="text-[9px] text-red-300 font-medium">HIGH OCCUPANCY</span>
                 </div>
               )}
+              
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                <span className="text-white text-xs font-bold px-3 py-1.5 bg-blue-600 rounded-lg">View & Book</span>
+              </div>
             </div>
           );
         })}
@@ -159,6 +174,19 @@ export const HeatmapPage: React.FC = () => {
         <div className="text-center py-12 text-slate-500">
           <Activity size={40} className="mx-auto mb-3 opacity-40" />
           <p>No resources match the selected filter.</p>
+        </div>
+      )}
+
+      {/* Resource Detail Modal for Booking */}
+      {selectedResource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg h-full max-h-[600px] flex">
+            <ResourceDetailPanel
+              resource={selectedResource}
+              onClose={() => setSelectedResource(null)}
+              className="w-full h-full shadow-2xl"
+            />
+          </div>
         </div>
       )}
     </div>

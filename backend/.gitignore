@@ -36,8 +36,11 @@ env.bak/
 venv.bak/
 
 # Environment variables & Secrets
+.env
 .env.local
 .env.*.local
+*.db
+*.db-journal
 firebase-credentials.json
 firebase-service-account.json
 *serviceAccountKey*.json
@@ -58,4 +61,3 @@ htmlcov/
 # OS files
 .DS_Store
 Thumbs.db
-.vercel

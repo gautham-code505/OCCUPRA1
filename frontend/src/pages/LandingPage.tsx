@@ -12,7 +12,7 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { num: '01', label: 'Student opens CampusPulse AI', detail: 'Sees live campus occupancy at a glance' },
+  { num: '01', label: 'Student opens OCCUPRA', detail: 'Sees live campus occupancy at a glance' },
   { num: '02', label: 'Checks the campus map', detail: 'Library is 72% — getting crowded fast' },
   { num: '03', label: 'Views AI prediction', detail: 'Library will hit 84% in just 60 minutes' },
   { num: '04', label: 'Clicks "Find Best Study Space"', detail: 'System analyzes all 15 resources in real-time' },
@@ -33,7 +33,7 @@ export const LandingPage: React.FC = () => {
               <Activity size={15} className="text-white" />
             </div>
             <div>
-              <span className="text-sm font-bold text-white">CAMPUSPULSE</span>
+              <span className="text-sm font-bold text-white">OCCUPRA</span>
               <span className="text-sm font-bold text-cyan-400"> AI</span>
             </div>
           </div>
@@ -62,7 +62,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-none mb-6">
-            <span className="text-white">CAMPUSPULSE</span>
+            <span className="text-white">OCCUPRA</span>
             <span className="block bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">AI</span>
           </h1>
 
@@ -166,7 +166,7 @@ export const LandingPage: React.FC = () => {
       {/* Footer */}
       <footer className="py-8 px-6 border-t border-white/5 text-center">
         <p className="text-xs text-slate-600">
-          CampusPulse AI · Smart Campus Digital Twin · Built for Hackathon 2026 · Powered by IoT Simulation & Gradient Boosting ML
+          OCCUPRA · Smart Campus Digital Twin · Built for Hackathon 2026 · Powered by IoT Simulation & Gradient Boosting ML
         </p>
       </footer>
     </div>
