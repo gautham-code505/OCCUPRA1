@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Secrets & Environment Files
+.env
+*.env
+backend/.env
+backend/firebase-credentials.json
+backend/firebase-service-account.json
+*serviceAccountKey*.json
+*service-account*.json
+firebase-credentials.json
+
+# Cache & Testing
+.pytest_cache/
+.coverage
