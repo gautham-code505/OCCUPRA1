@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
+import crypto from 'crypto';
 import { AuthRequest } from '../middleware/auth';
+import { parseClock, ampm } from '../campus/time';
+import { peakReservedInWindow } from '../services/bookingLogic';
+import { simClock } from '../campus/clock';
 
 export const getBookings = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -44,7 +48,9 @@ export const getMyBookings = async (req: AuthRequest, res: Response): Promise<vo
 
 export const createBooking = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { resourceId, date = 'Today', startTime = '02:00 PM', endTime = '03:00 PM', seats = 1, purpose = 'Study' } = req.body;
+    // Default slot: starting now (campus/demo time) for one hour
+    const nowMinute = Math.ceil(simClock.info().minuteOfDay / 5) * 5;
+    const { resourceId, date = 'Today', startTime = ampm(nowMinute), endTime = ampm(Math.min(1439, nowMinute + 60)), seats = 1, purpose = 'Study' } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -65,15 +71,35 @@ export const createBooking = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    if (resource.availableUnits < Number(seats)) {
-      res.status(400).json({ error: `Not enough available capacity (only ${resource.availableUnits} seats remaining)` });
+    const seatCount = Number(seats);
+    if (!Number.isInteger(seatCount) || seatCount < 1 || seatCount > 50) {
+      res.status(400).json({ error: 'seats must be a whole number between 1 and 50' });
+      return;
+    }
+    if (!resource.isAvailable) {
+      res.status(400).json({ error: `${resource.name} is currently closed` });
+      return;
+    }
+    const start = parseClock(startTime);
+    const end = parseClock(endTime);
+    if (start === null || end === null || end <= start) {
+      res.status(400).json({ error: 'startTime/endTime must be valid times like "02:00 PM", with end after start' });
       return;
     }
 
-    // Generate unique booking code
+    // Capacity check: other bookings overlapping this window + (if starting soon) people already inside
+    const alreadyBooked = await peakReservedInWindow(resource.id, start, end);
+    const nowMin = simClock.info().minuteOfDay;
+    const startsSoon = start <= nowMin + 30;
+    const free = startsSoon ? resource.availableUnits : resource.capacity - alreadyBooked;
+    if (free < seatCount) {
+      res.status(400).json({ error: `Not enough capacity for that slot (only ${Math.max(0, free)} seats free)` });
+      return;
+    }
+
+    // Collision-proof booking code
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randNum = Math.floor(100 + Math.random() * 900);
-    const bookingCode = `BK-${dateStr}-${randNum}`;
+    const bookingCode = `BK-${dateStr}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
     const booking = await prisma.booking.create({
       data: {
@@ -83,7 +109,7 @@ export const createBooking = async (req: AuthRequest, res: Response): Promise<vo
         date,
         startTime,
         endTime,
-        seats: Number(seats),
+        seats: seatCount,
         purpose,
         status: 'CONFIRMED',
       },
@@ -122,6 +148,10 @@ export const cancelBooking = async (req: AuthRequest, res: Response): Promise<vo
     const booking = await prisma.booking.findUnique({ where: { id } });
     if (!booking) {
       res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (booking.userId !== req.user?.id && req.user?.role !== 'ADMIN') {
+      res.status(403).json({ error: 'You can only cancel your own bookings' });
       return;
     }
 

@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { formatTimeAgo } from '../utils/helpers';
+import { DemoClockCard } from '../components/admin/DemoClockCard';
 
 const fadeIn = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 
@@ -91,6 +92,9 @@ export const AdminDashboard: React.FC = () => {
         </div>
         <LiveBadge />
       </motion.div>
+
+      {/* Demo clock: jump to any weekday/time */}
+      <DemoClockCard />
 
       {/* Demo Mode Panel */}
       <motion.div variants={fadeIn} initial="hidden" animate="show" transition={{ delay: 0.05 }}

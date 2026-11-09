@@ -9,7 +9,7 @@ import { LiveBadge } from '../ui/CoreComponents';
 
 export const Topbar: React.FC = () => {
   const { user } = useAuth();
-  const { notifications, unreadCount, isConnected, lastUpdate, refreshResources } = useLiveData();
+  const { notifications, unreadCount, isConnected, lastUpdate, refreshResources, clock } = useLiveData();
   const [search, setSearch] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [time, setTime] = useState(formatTime());
@@ -48,6 +48,14 @@ export const Topbar: React.FC = () => {
         <Clock size={13} className="text-slate-500" />
         <span className="font-mono text-sm text-slate-400">{time}</span>
       </div>
+
+      {/* Simulated campus time (demo clock) */}
+      {clock?.mode === 'demo' && (
+        <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30" title="Demo clock: simulated campus time">
+          DEMO {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][clock.dow]} {String(Math.floor(clock.minuteOfDay / 60)).padStart(2, '0')}:{String(clock.minuteOfDay % 60).padStart(2, '0')}
+          {clock.rate !== 1 && <span className="text-amber-400/70">×{clock.rate}</span>}
+        </span>
+      )}
 
       {/* Live status */}
       <LiveBadge className="hidden md:inline-flex" />

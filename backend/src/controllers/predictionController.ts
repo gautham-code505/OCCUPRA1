@@ -31,11 +31,9 @@ export const getAllPredictionsOverview = async (req: Request, res: Response): Pr
       },
     });
 
-    const forecasts = await Promise.all(
-      resources.map(async (resItem) => {
-        return PredictionService.getForecastForResource(resItem.id);
-      })
-    );
+    // Sequential: SQLite does not like many concurrent write transactions
+    const forecasts = [];
+    for (const resItem of resources) forecasts.push(await PredictionService.getForecastForResource(resItem.id));
 
     res.json({
       timestamp: new Date().toISOString(),
@@ -45,4 +43,8 @@ export const getAllPredictionsOverview = async (req: Request, res: Response): Pr
     console.error('Get all predictions overview error:', error);
     res.status(500).json({ error: 'Failed to fetch predictions overview' });
   }
+};
+
+export const getModelInfo = async (_req: Request, res: Response): Promise<void> => {
+  res.json(PredictionService.modelInfo());
 };

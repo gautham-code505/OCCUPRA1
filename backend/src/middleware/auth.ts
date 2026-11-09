@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'campuspulse_super_secret_jwt_key_2026';
+import { config } from '../config';
+
+const JWT_SECRET = config.jwtSecret;
 
 export interface AuthRequest extends Request {
   user?: {

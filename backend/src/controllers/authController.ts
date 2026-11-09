@@ -4,14 +4,21 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma';
 import { AuthRequest } from '../middleware/auth';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'campuspulse_super_secret_jwt_key_2026';
+import { config } from '../config';
+
+const JWT_SECRET = config.jwtSecret;
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, name, department, phoneNo, rollNo, role = 'STUDENT' } = req.body;
+    // Role is never taken from the client: public sign-up always creates students.
+    const { email, password, name, department, phoneNo, rollNo } = req.body;
 
     if (!email || !password || !name) {
       res.status(400).json({ error: 'Email, password, and name are required' });
+      return;
+    }
+    if (typeof email !== 'string' || typeof password !== 'string' || password.length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters' });
       return;
     }
 
@@ -30,7 +37,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         department: department || null,
         phoneNo: phoneNo || null,
         rollNo: rollNo || null,
-        role: role.toUpperCase() === 'ADMIN' ? 'ADMIN' : 'STUDENT',
+        role: 'STUDENT',
       },
       select: {
         id: true,

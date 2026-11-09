@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import { config } from './config';
 import authRoutes from './routes/authRoutes';
 import resourceRoutes from './routes/resourceRoutes';
 import occupancyRoutes from './routes/occupancyRoutes';
@@ -11,24 +11,21 @@ import notificationRoutes from './routes/notificationRoutes';
 import sensorRoutes from './routes/sensorRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import simulationRoutes from './routes/simulationRoutes';
+import intelligenceRoutes from './routes/intelligenceRoutes';
 import { IoTSimulationEngine } from './simulation/engine';
 import { prisma } from './utils/prisma';
 
-dotenv.config();
-
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = config.port;
 
-// Middleware — allow all origins for Vercel<->Render communication
+// CORS: restrict to CORS_ORIGINS when set (comma-separated). Auth uses Bearer tokens, not cookies.
 app.use(
   cors({
-    origin: function (_origin, callback) {
-      callback(null, true);
-    },
-    credentials: true,
+    origin: config.corsOrigins.length ? config.corsOrigins : true,
+    credentials: false,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 
 // Initialize IoT Simulation Engine
 const simulationEngine = IoTSimulationEngine.getInstance();
@@ -46,7 +43,11 @@ app.get('/api/stream', (req: Request, res: Response) => {
     res.write(`data: ${JSON.stringify({ type: eventType, data })}\n\n`);
   });
 
+  // Heartbeat keeps proxies (Render/Vercel) from closing idle streams
+  const heartbeat = setInterval(() => res.write(': ping\n\n'), 25000);
+
   req.on('close', () => {
+    clearInterval(heartbeat);
     unsubscribe();
     res.end();
   });
@@ -73,6 +74,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/sensors', sensorRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/simulation', simulationRoutes);
+app.use('/api/campus', intelligenceRoutes);
 
 // Global Error Handler
 app.use((err: any, _req: Request, res: Response, _next: any) => {

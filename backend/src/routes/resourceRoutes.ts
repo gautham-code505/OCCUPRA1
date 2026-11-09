@@ -6,13 +6,14 @@ import {
   updateResource,
   deleteResource,
 } from '../controllers/resourceController';
+import { authenticate, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
 router.get('/', getResources);
 router.get('/:id', getResourceById);
-router.post('/', createResource);
-router.put('/:id', updateResource);
-router.delete('/:id', deleteResource);
+router.post('/', authenticate, requireAdmin, createResource);
+router.put('/:id', authenticate, requireAdmin, updateResource);
+router.delete('/:id', authenticate, requireAdmin, deleteResource);
 
 export default router;

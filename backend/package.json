@@ -5,11 +5,15 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc --noEmit || true",
+    "build": "tsc --noEmit",
     "start": "tsx src/index.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:seed": "tsx src/prisma/seed.ts"
+    "prisma:seed": "tsx src/prisma/seed.ts",
+    "timetable:generate": "tsx scripts/generate-timetable.ts",
+    "ml:dataset": "tsx scripts/generate-dataset.ts",
+    "ml:verify": "tsx scripts/verify-model.ts",
+    "preview:day": "tsx scripts/preview-day.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

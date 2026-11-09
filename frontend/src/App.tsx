@@ -27,6 +27,9 @@ import { BookingManagementPage } from './pages/BookingManagementPage';
 import { LiveCampusMonitoringPage } from './pages/LiveCampusMonitoringPage';
 import { PredictionAnalyticsPage } from './pages/PredictionAnalyticsPage';
 import { SystemSettingsPage } from './pages/SystemSettingsPage';
+import { SmartPlannerPage } from './pages/SmartPlannerPage';
+import { EnergyPage } from './pages/EnergyPage';
+import { WhatIfPage } from './pages/WhatIfPage';
 
 const App: React.FC = () => {
   return (
@@ -46,6 +49,7 @@ const App: React.FC = () => {
                 <Route path="/map" element={<CampusMapPage />} />
                 <Route path="/heatmap" element={<HeatmapPage />} />
                 <Route path="/prediction" element={<CrowdPredictionPage />} />
+                <Route path="/planner" element={<SmartPlannerPage />} />
                 <Route path="/recommendation" element={<RecommendationPage />} />
                 <Route path="/bookings" element={<BookingsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
@@ -62,6 +66,8 @@ const App: React.FC = () => {
                 <Route path="/admin/resources" element={<ResourceManagementPage />} />
                 <Route path="/admin/analytics" element={<CrowdAnalyticsPage />} />
                 <Route path="/admin/predictions" element={<PredictionAnalyticsPage />} />
+                <Route path="/admin/energy" element={<EnergyPage />} />
+                <Route path="/admin/whatif" element={<WhatIfPage />} />
                 <Route path="/admin/utilization" element={<ResourceUtilizationPage />} />
                 <Route path="/admin/insights" element={<AIInsightsPage />} />
                 <Route path="/admin/bookings" element={<BookingManagementPage />} />

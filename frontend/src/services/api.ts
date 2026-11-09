@@ -141,3 +141,25 @@ export const simulationAPI = {
   reset: () =>
     fetch(`${BASE_URL}/simulation/reset`, { method: 'POST', headers: getHeaders() }).then(handleResponse),
 };
+
+// CAMPUS INTELLIGENCE (timetable, demo clock, energy, what-if, agent, WiFi)
+const post = (path: string, body?: any) =>
+  fetch(`${BASE_URL}${path}`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body ?? {}) }).then(handleResponse);
+
+export const campusAPI = {
+  getTimetable: (day?: number) =>
+    fetch(`${BASE_URL}/campus/timetable${day !== undefined ? `?day=${day}` : ''}`, { headers: getHeaders() }).then(handleResponse),
+  getClock: () => fetch(`${BASE_URL}/campus/clock`, { headers: getHeaders() }).then(handleResponse),
+  setClock: (body: { day?: number; time?: string; rate?: number; mode?: 'real' }) => post('/simulation/clock', body),
+  getEnergy: (params?: { day?: number; tariff?: number; co2?: number }) => {
+    const q = new URLSearchParams(Object.entries(params ?? {}).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]));
+    return fetch(`${BASE_URL}/campus/energy?${q}`, { headers: getHeaders() }).then(handleResponse);
+  },
+  applyEnergy: (resourceId: string, open: boolean) => post('/campus/energy/apply', { resourceId, open }),
+  whatIf: (body: { type: 'shift_slot' | 'stagger' | 'attendance'; day?: number; slotStart?: string; minutes?: number; factor?: number }) =>
+    post('/campus/whatif', body),
+  plan: (message: string) => post('/campus/agent/plan', { message }),
+  checkPlan: (steps: any[]) => post('/campus/agent/check', { steps }),
+  getWifi: () => fetch(`${BASE_URL}/campus/wifi`, { headers: getHeaders() }).then(handleResponse),
+  getModelInfo: () => fetch(`${BASE_URL}/predictions/model-info`, { headers: getHeaders() }).then(handleResponse),
+};

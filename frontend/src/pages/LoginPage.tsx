@@ -8,7 +8,7 @@ export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
-  const [role, setRole] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
+  const role: 'STUDENT' | 'ADMIN' = 'STUDENT'; // admins are provisioned by the institution, never self-registered
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -27,7 +27,7 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
     try {
       if (isRegistering) {
-        await authAPI.register({ email, password, name, role, phoneNo, rollNo, department });
+        await authAPI.register({ email, password, name, phoneNo, rollNo, department });
         setSuccess('Registration successful! Please sign in.');
         setIsRegistering(false);
         setPassword('');
@@ -78,12 +78,6 @@ export const LoginPage: React.FC = () => {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegistering && (
-              <div className="flex bg-white/5 rounded-xl p-1 mb-4">
-                <button type="button" onClick={() => setRole('STUDENT')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${role === 'STUDENT' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Student</button>
-                <button type="button" onClick={() => setRole('ADMIN')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${role === 'ADMIN' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>Admin</button>
-              </div>
-            )}
 
             {isRegistering && (
               <div>

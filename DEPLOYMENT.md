@@ -14,7 +14,7 @@ If you haven't initialized Git and pushed this folder to GitHub yet:
 
 1. Open PowerShell or Command Prompt in this folder:
    ```bash
-   cd path/to/OCCUPRA1
+   cd path\to\OCCUPRA1
    ```
 2. Initialize repository and commit:
    ```bash
@@ -63,7 +63,10 @@ You can deploy automatically via the included `render.yaml` Blueprint or manuall
    - `NODE_ENV` = `production`
    - `PORT` = `10000`
    - `DATABASE_URL` = `file:./dev.db`
-   - `JWT_SECRET` = `campuspulse_super_secret_jwt_key_2026`
+   - `JWT_SECRET` = a long random string (Render: use **Generate**). Never reuse a value from the docs.
+   - `GROQ_API_KEY` = your Groq key (Smart Planner). Paste it only in the Render dashboard.
+   - `GROQ_MODEL` = `openai/gpt-oss-20b`
+   - `CORS_ORIGINS` = your Vercel URL, e.g. `https://occupra.vercel.app`
 5. Click **Create Web Service**.
 6. Wait for the build logs to show `✨ CampusPulse AI database seeding completed successfully!` and `Server running on port 10000`.
 7. **Copy your backend URL** (e.g., `https://occupra-backend.onrender.com`).
@@ -103,3 +106,7 @@ You can deploy automatically via the included `render.yaml` Blueprint or manuall
    - Explore the **Interactive Digital Twin Map** and **Live Crowd Heatmap**.
    - Check **Crowd Prediction** and test the **Smart Recommendation Wizard**.
    - In Admin Mode, check the **IoT Sensor Control Center** and trigger simulation scenarios.
+   - Admin → **Command Center → Demo Clock** → "Mon 12:20 · lunch rush" to show timetable-driven peaks at any hour.
+   - Student → **Smart Planner**, Admin → **Energy Optimizer** and **What-If Simulator**.
+
+> ⚠️ Render's free disk is ephemeral: the SQLite database is re-created and re-seeded on every deploy/restart.

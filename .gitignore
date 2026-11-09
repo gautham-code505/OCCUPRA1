@@ -39,3 +39,6 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Generated ML training data (regenerate: cd backend && npx tsx scripts/generate-dataset.ts)
+ml/timetable/dataset.csv

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
-import { Resource, Notification } from '../types';
+import { Resource, Notification, SimClockInfo } from '../types';
+import { useAuth } from './AuthContext';
 
 interface LiveDataContextType {
   resources: Resource[];
@@ -8,6 +9,7 @@ interface LiveDataContextType {
   isConnected: boolean;
   isSurgeActive: boolean;
   lastUpdate: Date | null;
+  clock: SimClockInfo | null;
   refreshResources: () => void;
   markAllReadLocally: () => void;
   refreshNotifications: () => void;
@@ -31,13 +33,18 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isSurgeActive, setIsSurgeActive] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [clock, setClock] = useState<SimClockInfo | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const { token } = useAuth();
 
   const loadInitialNotifications = async () => {
     try {
       const token = localStorage.getItem('campuspulse_token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const data = await fetch(`${API_BASE}/notifications`, { headers }).then(r => r.json());
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/notifications`, { headers });
+      if (!res.ok) return;
+      const data = await res.json();
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
     } catch (_) {}
@@ -79,10 +86,14 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
 
         if (payload.type === 'CONNECTED') {
           setIsConnected(true);
+          if (payload.state?.clock) setClock(payload.state.clock);
+        } else if (payload.type === 'CLOCK') {
+          setClock(payload.data);
         } else if (payload.type === 'TICK') {
-          const { resources: updatedResources, surgeScenarioActive } = payload.data;
+          const { resources: updatedResources, surgeScenarioActive, clock: c } = payload.data;
           setResources(updatedResources);
           setIsSurgeActive(surgeScenarioActive);
+          if (c) setClock(c);
         } else if (payload.type === 'RESOURCE_UPDATE') {
           setResources(prev =>
             prev.map(r =>
@@ -109,8 +120,14 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // Notifications are per-user: reload whenever the logged-in user changes
+  useEffect(() => {
+    if (token) loadInitialNotifications();
+    else { setNotifications([]); setUnreadCount(0); }
+  }, [token]);
+
   return (
-    <LiveDataContext.Provider value={{ resources, notifications, unreadCount, isConnected, isSurgeActive, lastUpdate, refreshResources, markAllReadLocally, refreshNotifications }}>
+    <LiveDataContext.Provider value={{ resources, notifications, unreadCount, isConnected, isSurgeActive, lastUpdate, clock, refreshResources, markAllReadLocally, refreshNotifications }}>
       {children}
     </LiveDataContext.Provider>
   );

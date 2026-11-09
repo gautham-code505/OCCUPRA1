@@ -136,6 +136,18 @@ export const CrowdPredictionPage: React.FC = () => {
                     {forecast.interpretation}
                   </div>
                 </div>
+
+                {/* Why: timetable drivers + model provenance */}
+                {(forecast.drivers?.length || forecast.model) && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {forecast.model === 'timetable-gbm' && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">TIMETABLE-AWARE ML</span>
+                    )}
+                    {forecast.drivers?.map((d) => (
+                      <span key={d} className="text-xs px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">📅 {d}</span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Prediction horizon cards */}
@@ -156,7 +168,9 @@ export const CrowdPredictionPage: React.FC = () => {
                         style={{ width: `${pred.predictedPercent}%` }}
                       />
                     </div>
-                    <p className="text-[9px] text-slate-600 mt-1.5">{Math.round(pred.confidence * 100)}% confidence</p>
+                    <p className="text-[9px] text-slate-600 mt-1.5">
+                      {pred.expectedErrorPct !== undefined ? `±${pred.expectedErrorPct.toFixed(1)}% typical error · R² ${pred.confidence.toFixed(2)}` : `${Math.round(pred.confidence * 100)}% confidence`}
+                    </p>
                   </div>
                 ))}
               </div>

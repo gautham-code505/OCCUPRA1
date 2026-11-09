@@ -5,6 +5,7 @@ import { Cpu, RefreshCw, Play, Pause, ArrowUpCircle, ArrowDownCircle } from 'luc
 import { LiveBadge, LoadingSkeleton } from '../components/ui/CoreComponents';
 import { formatTimeAgo, cn } from '../utils/helpers';
 import { useLiveData } from '../contexts/LiveDataContext';
+import { WifiSensingPanel } from '../components/admin/WifiSensingPanel';
 
 export const IoTSensorPage: React.FC = () => {
   const [sensors, setSensors] = useState<(Sensor & { resource: any })[]>([]);
@@ -65,6 +66,8 @@ export const IoTSensorPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <WifiSensingPanel />
 
       {/* Summary cards */}
       {summary && (

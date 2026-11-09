@@ -1,10 +1,15 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../utils/prisma';
 import { AuthRequest } from '../middleware/auth';
 
+// A user sees their own notifications plus campus-wide broadcasts (userId = null).
+const visibleTo = (userId: string) => ({ OR: [{ userId }, { userId: null }] });
+
 export const getNotifications = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user!.id;
     const notifications = await prisma.notification.findMany({
+      where: visibleTo(userId),
       orderBy: { createdAt: 'desc' },
       take: 50,
       include: {
@@ -16,19 +21,23 @@ export const getNotifications = async (req: AuthRequest, res: Response): Promise
 
     const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-    res.json({
-      notifications,
-      unreadCount,
-    });
+    res.json({ notifications, unreadCount });
   } catch (error) {
     console.error('Get notifications error:', error);
     res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 };
 
-export const markAsRead = async (req: Request, res: Response): Promise<void> => {
+export const markAsRead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const userId = req.user!.id;
+
+    const existing = await prisma.notification.findFirst({ where: { id, ...visibleTo(userId) } });
+    if (!existing) {
+      res.status(404).json({ error: 'Notification not found' });
+      return;
+    }
 
     const notif = await prisma.notification.update({
       where: { id },
@@ -42,10 +51,11 @@ export const markAsRead = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const markAllAsRead = async (req: Request, res: Response): Promise<void> => {
+export const markAllAsRead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user!.id;
     await prisma.notification.updateMany({
-      where: { isRead: false },
+      where: { isRead: false, ...visibleTo(userId) },
       data: { isRead: true },
     });
 

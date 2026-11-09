@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Map, Activity, BookOpen, Brain, Lightbulb,
   CalendarCheck, Bell, User, Settings, ChevronLeft, ChevronRight,
-  Shield, Cpu, BarChart3, Zap, Database, LogOut, TrendingUp, Eye, Sun, Moon
+  Shield, Cpu, BarChart3, Zap, Database, LogOut, TrendingUp, Eye, Sun, Moon, Sparkles, Leaf, FlaskConical
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLiveData } from '../../contexts/LiveDataContext';
@@ -23,6 +23,7 @@ const studentNav: NavItem[] = [
   { label: 'Campus Map', path: '/map', icon: <Map size={18} /> },
   { label: 'Live Heatmap', path: '/heatmap', icon: <Activity size={18} /> },
   { label: 'Crowd Prediction', path: '/prediction', icon: <TrendingUp size={18} /> },
+  { label: 'Smart Planner', path: '/planner', icon: <Sparkles size={18} />, badge: 'AI' },
   { label: 'Find Best Space', path: '/recommendation', icon: <Brain size={18} /> },
   { label: 'My Bookings', path: '/bookings', icon: <CalendarCheck size={18} /> },
   { label: 'Notifications', path: '/notifications', icon: <Bell size={18} /> },
@@ -36,6 +37,8 @@ const adminNav: NavItem[] = [
   { label: 'Resources', path: '/admin/resources', icon: <Database size={18} /> },
   { label: 'Crowd Analytics', path: '/admin/analytics', icon: <BarChart3 size={18} /> },
   { label: 'Prediction Analytics', path: '/admin/predictions', icon: <TrendingUp size={18} /> },
+  { label: 'Energy Optimizer', path: '/admin/energy', icon: <Leaf size={18} />, badge: 'NEW' },
+  { label: 'What-If Simulator', path: '/admin/whatif', icon: <FlaskConical size={18} />, badge: 'NEW' },
   { label: 'Utilization', path: '/admin/utilization', icon: <Zap size={18} /> },
   { label: 'AI Insights', path: '/admin/insights', icon: <Lightbulb size={18} /> },
   { label: 'Bookings Mgmt', path: '/admin/bookings', icon: <CalendarCheck size={18} /> },
@@ -118,6 +121,9 @@ export const Sidebar: React.FC = () => {
                 {item.icon}
               </span>
               {!collapsed && <span className="truncate">{item.label}</span>}
+              {!collapsed && item.badge && (
+                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">{item.badge}</span>
+              )}
               {!collapsed && isNotif && unreadCount > 0 && (
                 <span className="ml-auto bg-red-500 text-white rounded-full text-[10px] font-bold w-5 h-5 flex items-center justify-center">
                   {unreadCount > 9 ? '9+' : unreadCount}

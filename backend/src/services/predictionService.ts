@@ -1,12 +1,18 @@
-import { execFile } from 'child_process';
-import path from 'path';
+import { Resource } from '@prisma/client';
 import { prisma } from '../utils/prisma';
+import { HORIZONS, HorizonKey, ALL_FEATURES, buildFeatures, pick } from '../ml/features';
+import { loadModel, predictHorizon, horizonStats } from '../ml/gbm';
+import { nowContext, trend15 } from '../campus/liveState';
+import { targetPeople, ResLite, groupOf } from '../campus/dynamics';
+import { sessionsForDay, getTimetable } from '../campus/timetable';
+import { hhmm } from '../campus/time';
 
 export interface PredictionResult {
-  horizon: '30m' | '1h' | '2h' | '4h';
+  horizon: HorizonKey;
   timeOffsetMinutes: number;
   predictedPercent: number;
-  confidence: number;
+  confidence: number; // model R² on held-out days (1.0 = perfect)
+  expectedErrorPct: number; // mean absolute error on held-out days, in % points
   trend: 'INCREASING' | 'DECREASING' | 'STABLE';
   summary: string;
 }
@@ -19,172 +25,151 @@ export interface ResourceForecast {
   predictions: PredictionResult[];
   overallTrend: 'INCREASING' | 'DECREASING' | 'STABLE';
   interpretation: string;
+  model: 'timetable-gbm' | 'analytical';
+  drivers: string[];
+}
+
+type ResLike = Pick<Resource, 'id' | 'code' | 'type' | 'capacity' | 'occupancyPercent' | 'isAvailable'> & {
+  sensors?: { entryRate: number; exitRate: number }[];
+};
+
+const toLite = (r: ResLike): ResLite => ({ id: r.id, code: r.code, type: r.type, capacity: r.capacity, isAvailable: r.isAvailable });
+
+let resourceCache: { at: number; list: ResLite[] } | null = null;
+async function allResourcesLite(): Promise<ResLite[]> {
+  if (resourceCache && Date.now() - resourceCache.at < 10000) return resourceCache.list;
+  const list = (await prisma.resource.findMany({ select: { id: true, code: true, type: true, capacity: true, isAvailable: true } })) as ResLite[];
+  resourceCache = { at: Date.now(), list };
+  return list;
+}
+export function setResourceCache(list: ResLite[]) {
+  resourceCache = { at: Date.now(), list };
+}
+
+function describe(predicted: number, current: number): Pick<PredictionResult, 'trend' | 'summary'> {
+  const diff = predicted - current;
+  if (diff >= 3.5) return { trend: 'INCREASING', summary: `Expected to rise by ${Math.round(diff)}% to ${predicted}%` };
+  if (diff <= -3.5) return { trend: 'DECREASING', summary: `Expected to subside by ${Math.abs(Math.round(diff))}% to ${predicted}%` };
+  return { trend: 'STABLE', summary: 'Occupancy projected to stay steady' };
 }
 
 export class PredictionService {
-  /**
-   * Run ML prediction using Python script, with fallback to analytical prediction.
-   */
-  public static async calculatePredictions(
-    currentOccupancyPercent: number,
-    capacity: number,
-    entryRate: number,
-    exitRate: number,
-    resourceType: string,
-    currentHour: number = new Date().getHours()
-  ): Promise<PredictionResult[]> {
-    const data = {
-      hour: currentHour,
-      day_of_week: new Date().getDay(),
-      is_weekend: [0, 6].includes(new Date().getDay()) ? 1 : 0,
-      capacity,
-      current_occupancy_percent: currentOccupancyPercent,
-      entry_rate: entryRate,
-      exit_rate: exitRate,
-      resource_type: resourceType,
-    };
+  /** Live multi-horizon forecast for one resource (synchronous; pass the resource list for group shares). */
+  public static forecastSync(res: ResLike, resources: ResLite[]): { predictions: PredictionResult[]; model: ResourceForecast['model'] } {
+    const ctx = nowContext(resources);
+    const current = res.occupancyPercent;
+    const model = loadModel();
 
-    try {
-      // Bypass Python ML script completely for demo to avoid hangs on Windows (Microsoft Store popup)
-      // and directly use the reliable analytical engine
-      return this.calculateAnalyticalPredictions(currentOccupancyPercent, capacity, entryRate, exitRate, resourceType, currentHour);
-
-    } catch (err) {
-      console.warn("Using analytical prediction fallback.");
-      return this.calculateAnalyticalPredictions(currentOccupancyPercent, capacity, entryRate, exitRate, resourceType, currentHour);
+    if (model && res.isAvailable !== false) {
+      const t15 = trend15(res.id, current, ctx.simMs);
+      const predictions = HORIZONS.map(({ key, minutes }) => {
+        const feats = buildFeatures({
+          resource: toLite(res), minuteOfDay: ctx.minuteOfDay, dow: ctx.dow, currentPct: current,
+          trend15: t15, horizonMin: minutes, pressure: ctx.pressure, caps: ctx.caps,
+        });
+        const raw = predictHorizon(key, pick(feats, ALL_FEATURES)) ?? current;
+        const predicted = Math.round(Math.max(0, Math.min(100, raw)) * 10) / 10;
+        const stats = horizonStats(key)!;
+        return {
+          horizon: key, timeOffsetMinutes: minutes, predictedPercent: predicted,
+          confidence: Math.round(stats.r2 * 100) / 100, expectedErrorPct: stats.mae,
+          ...describe(predicted, current),
+        };
+      });
+      return { predictions, model: 'timetable-gbm' };
     }
-  }
 
-  private static calculateAnalyticalPredictions(
-    currentOccupancyPercent: number,
-    capacity: number,
-    entryRate: number,
-    exitRate: number,
-    resourceType: string,
-    currentHour: number = new Date().getHours()
-  ): PredictionResult[] {
-    const netFlowPerMin = entryRate - exitRate;
-    const netVelocityPct = (netFlowPerMin / Math.max(10, capacity)) * 100;
-
-    // Peak hour modifier (campus peak is roughly 11 AM - 5 PM)
-    const isPeakWindow = currentHour >= 11 && currentHour <= 17;
-    const isLateEvening = currentHour >= 19 || currentHour < 7;
-
-    const horizons: { name: '30m' | '1h' | '2h' | '4h'; mins: number; multiplier: number }[] = [
-      { name: '30m', mins: 30, multiplier: 0.5 },
-      { name: '1h', mins: 60, multiplier: 1.0 },
-      { name: '2h', mins: 120, multiplier: 1.8 },
-      { name: '4h', mins: 240, multiplier: 3.0 },
-    ];
-
-    return horizons.map(({ name, mins, multiplier }) => {
-      let drift = netVelocityPct * multiplier * 6.5;
-
-      // Diurnal seasonal correction
-      if (isPeakWindow) {
-        drift += (5.0 * multiplier);
-      } else if (isLateEvening) {
-        drift -= (8.0 * multiplier);
-      }
-
-      // Add small deterministic variance
-      let predicted = currentOccupancyPercent + drift;
-      predicted = Math.round(Math.max(5.0, Math.min(98.0, predicted)) * 10) / 10;
-
-      const diff = predicted - currentOccupancyPercent;
-      let trend: 'INCREASING' | 'DECREASING' | 'STABLE' = 'STABLE';
-      if (diff >= 3.5) trend = 'INCREASING';
-      else if (diff <= -3.5) trend = 'DECREASING';
-
-      let summary = 'Occupancy projected to stay steady';
-      if (trend === 'INCREASING') {
-        summary = `Expected to rise by ${Math.round(diff)}% to ${predicted}%`;
-      } else if (trend === 'DECREASING') {
-        summary = `Expected to subside by ${Math.abs(Math.round(diff))}% to ${predicted}%`;
-      }
-
-      const confidence = Math.round((0.94 - (mins / 240) * 0.16) * 100) / 100;
-
+    // Analytical fallback (used only if model.json is missing)
+    const sensor = res.sensors?.[0];
+    const net = (sensor?.entryRate ?? 4) - (sensor?.exitRate ?? 2);
+    const vel = (net / Math.max(10, res.capacity)) * 100;
+    const hour = Math.floor(ctx.minuteOfDay / 60);
+    const predictions = HORIZONS.map(({ key, minutes }, i) => {
+      const mult = [0.5, 1, 1.8, 3][i];
+      let drift = vel * mult * 6.5;
+      if (hour >= 11 && hour <= 17) drift += 5 * mult;
+      else if (hour >= 19 || hour < 7) drift -= 8 * mult;
+      const predicted = Math.round(Math.max(5, Math.min(98, current + drift)) * 10) / 10;
       return {
-        horizon: name,
-        timeOffsetMinutes: mins,
-        predictedPercent: predicted,
-        confidence,
-        trend,
-        summary,
+        horizon: key, timeOffsetMinutes: minutes, predictedPercent: predicted,
+        confidence: Math.round((0.94 - (minutes / 240) * 0.16) * 100) / 100, expectedErrorPct: 10,
+        ...describe(predicted, current),
       };
     });
+    return { predictions, model: 'analytical' };
+  }
+
+  public static async forecast(res: ResLike) {
+    return this.forecastSync(res, await allResourcesLite());
   }
 
   /**
-   * Get forecast for a resource and sync with database
+   * Predicted occupancy % for any time up to ~10h ahead: interpolates the ML horizons,
+   * beyond 4h falls back to the expected timetable-driven profile.
    */
-  public static async getForecastForResource(resourceId: string): Promise<ResourceForecast | null> {
-    const resource = await prisma.resource.findUnique({
-      where: { id: resourceId },
-      include: {
-        sensors: true,
-      },
-    });
-
-    if (!resource) return null;
-
-    const sensor = resource.sensors[0];
-    const entryRate = sensor ? sensor.entryRate : 4;
-    const exitRate = sensor ? sensor.exitRate : 2;
-
-    const predictions = await this.calculatePredictions(
-      resource.occupancyPercent,
-      resource.capacity,
-      entryRate,
-      exitRate,
-      resource.type
-    );
-
-    // Persist predictions to DB
-    for (const pred of predictions) {
-      const existing = await prisma.prediction.findFirst({
-        where: {
-          resourceId: resource.id,
-          timeOffsetMinutes: pred.timeOffsetMinutes,
-        },
-      });
-
-      if (existing) {
-        await prisma.prediction.update({
-          where: { id: existing.id },
-          data: {
-            predictedOccupancyPercent: pred.predictedPercent,
-            confidence: pred.confidence,
-            trend: pred.trend,
-            summary: pred.summary,
-          },
-        });
-      } else {
-        await prisma.prediction.create({
-          data: {
-            resourceId: resource.id,
-            timeOffsetMinutes: pred.timeOffsetMinutes,
-            predictedOccupancyPercent: pred.predictedPercent,
-            confidence: pred.confidence,
-            trend: pred.trend,
-            summary: pred.summary,
-          },
-        });
+  public static predictPctAtSync(res: ResLike, minutesAhead: number, resources: ResLite[], forecast?: PredictionResult[]): number {
+    if (res.isAvailable === false) return 100;
+    const preds = forecast ?? this.forecastSync(res, resources).predictions;
+    const points = [{ m: 0, p: res.occupancyPercent }, ...preds.map((p) => ({ m: p.timeOffsetMinutes, p: p.predictedPercent }))];
+    if (minutesAhead <= 0) return res.occupancyPercent;
+    for (let i = 1; i < points.length; i++) {
+      if (minutesAhead <= points[i].m) {
+        const a = points[i - 1], b = points[i];
+        return a.p + ((b.p - a.p) * (minutesAhead - a.m)) / (b.m - a.m);
       }
     }
+    const ctx = nowContext(resources);
+    const m = Math.min(1439, ctx.minuteOfDay + minutesAhead);
+    return (targetPeople(toLite(res), m, ctx.isWeekend, ctx.pressure, ctx.caps) / res.capacity) * 100;
+  }
 
-    const oneHourPred = predictions.find((p) => p.timeOffsetMinutes === 60);
-    const overallTrend = oneHourPred ? oneHourPred.trend : 'STABLE';
-
-    let interpretation = 'Steady occupancy expected throughout next 2 hours.';
-    if (oneHourPred && oneHourPred.predictedPercent >= 75) {
-      interpretation = '⚠ Crowd expected to increase significantly. High contention anticipated.';
-    } else if (overallTrend === 'DECREASING') {
-      interpretation = '✓ Crowd expected to decrease. Availability opening up soon.';
-    } else if (overallTrend === 'INCREASING') {
-      interpretation = '📈 Moderate crowd increase forecasted. Reserve early to guarantee space.';
+  /** Human-readable reasons from the timetable for what the forecast is doing. */
+  public static drivers(res: ResLike): string[] {
+    const ctx = nowContext([]);
+    const now = ctx.minuteOfDay;
+    const sessions = sessionsForDay(getTimetable(), ctx.dow);
+    const out: string[] = [];
+    const g = groupOf(res.type);
+    if (g === 'teaching' || res.code.startsWith('LAB')) {
+      const next = sessions.filter((s) => s.roomCode === res.code && s.end > now).sort((a, b) => a.start - b.start)[0];
+      if (next) out.push(next.start <= now ? `${next.courseCode} in session until ${hhmm(next.end)} (${next.enrollment} enrolled)` : `Next class ${next.courseCode} at ${hhmm(next.start)} (${next.enrollment} enrolled)`);
     }
+    const ending = sessions.filter((s) => s.end > now && s.end <= now + 60);
+    if (ending.length && g !== 'teaching') {
+      const students = ending.reduce((a, s) => a + s.enrollment, 0);
+      const at = Math.min(...ending.map((s) => s.end));
+      out.push(`${students} students leave class around ${hhmm(at)} (timetable)`);
+    }
+    return out;
+  }
+
+  /** Forecast for a resource (API shape) and persist latest predictions. */
+  public static async getForecastForResource(resourceId: string): Promise<ResourceForecast | null> {
+    const resource = await prisma.resource.findUnique({ where: { id: resourceId }, include: { sensors: true } });
+    if (!resource) return null;
+
+    const { predictions, model } = await this.forecast(resource);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.prediction.deleteMany({ where: { resourceId: resource.id } });
+      await tx.prediction.createMany({
+        data: predictions.map((p) => ({
+          resourceId: resource.id,
+          timeOffsetMinutes: p.timeOffsetMinutes,
+          predictedOccupancyPercent: p.predictedPercent,
+          confidence: p.confidence,
+          trend: p.trend,
+          summary: p.summary,
+        })),
+      });
+    });
+
+    const oneHour = predictions.find((p) => p.timeOffsetMinutes === 60);
+    const overallTrend = oneHour ? oneHour.trend : 'STABLE';
+    let interpretation = 'Steady occupancy expected throughout the next 2 hours.';
+    if (oneHour && oneHour.predictedPercent >= 75) interpretation = '⚠ Crowd expected to increase significantly. High contention anticipated.';
+    else if (overallTrend === 'DECREASING') interpretation = '✓ Crowd expected to decrease. Availability opening up soon.';
+    else if (overallTrend === 'INCREASING') interpretation = '📈 Moderate crowd increase forecasted. Reserve early to guarantee space.';
 
     return {
       resourceId: resource.id,
@@ -194,6 +179,22 @@ export class PredictionService {
       predictions,
       overallTrend,
       interpretation,
+      model,
+      drivers: this.drivers(resource),
+    };
+  }
+
+  public static modelInfo() {
+    const m = loadModel();
+    if (!m) return { model: 'analytical', horizons: {} };
+    return {
+      model: 'timetable-gbm',
+      algorithm: m.algorithm,
+      trainedAt: m.trained_at,
+      features: m.features,
+      horizons: Object.fromEntries(
+        HORIZONS.map(({ key }) => [key, horizonStats(key)])
+      ),
     };
   }
 }

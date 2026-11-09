@@ -116,11 +116,14 @@ export interface ResourceForecast {
     timeOffsetMinutes: number;
     predictedPercent: number;
     confidence: number;
+    expectedErrorPct?: number;
     trend: 'INCREASING' | 'DECREASING' | 'STABLE';
     summary: string;
   }[];
   overallTrend: 'INCREASING' | 'DECREASING' | 'STABLE';
   interpretation: string;
+  model?: 'timetable-gbm' | 'analytical';
+  drivers?: string[];
 }
 
 export interface RecommendedResource {
@@ -154,3 +157,13 @@ export interface CampusOverview {
 
 export type CrowdStatus = 'QUIET' | 'MODERATE' | 'CROWDED';
 export type ResourceType = 'LIBRARY' | 'COMPUTER_LAB' | 'STUDY_ROOM' | 'CANTEEN' | 'SEMINAR_HALL' | 'CLASSROOM' | 'RESEARCH_LAB' | 'ACTIVITY_CENTER';
+
+export interface SimClockInfo {
+  mode: 'real' | 'demo';
+  rate: number;
+  simTime: string;
+  dow: number;
+  minuteOfDay: number;
+  dateKey: string;
+  isWeekend: boolean;
+}

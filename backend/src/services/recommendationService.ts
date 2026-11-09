@@ -44,6 +44,7 @@ export class RecommendationService {
     const scoredResources: RecommendedResource[] = [];
 
     for (const res of allResources) {
+      if (!res.isAvailable) continue;
       const reasons: string[] = [];
       let score = 100;
 
@@ -114,18 +115,9 @@ export class RecommendationService {
         reasons.push(`Close proximity: ${res.distanceMeters}m away`);
       }
 
-      // 5. 1-Hour Prediction
-      const sensor = res.sensors[0];
-      const entryRate = sensor ? sensor.entryRate : 4;
-      const exitRate = sensor ? sensor.exitRate : 2;
-      const preds = await PredictionService.calculatePredictions(
-        res.occupancyPercent,
-        res.capacity,
-        entryRate,
-        exitRate,
-        res.type
-      );
-      const oneHourPred = preds.find((p: any) => p.timeOffsetMinutes === 60)?.predictedPercent || res.occupancyPercent;
+      // 5. 1-Hour Prediction (timetable-aware ML)
+      const { predictions: preds } = PredictionService.forecastSync(res, allResources);
+      const oneHourPred = preds.find((p) => p.timeOffsetMinutes === 60)?.predictedPercent ?? res.occupancyPercent;
 
       if (oneHourPred < 50) {
         score += 8;
