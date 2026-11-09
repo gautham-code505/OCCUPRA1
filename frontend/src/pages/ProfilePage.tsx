@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Building, Shield, LogOut, CheckCircle } from 'lucide-react';
+import { User, Mail, Building, Shield, LogOut } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -68,26 +68,6 @@ export const ProfilePage: React.FC = () => {
               → {item.label}
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* Demo credentials */}
-      <div className="glass-card rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <CheckCircle size={14} className="text-blue-400" />
-          <h3 className="text-sm font-semibold text-blue-300">Demo Credentials</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-3 text-xs">
-          <div className="p-3 bg-white/5 rounded-xl">
-            <p className="text-slate-400 mb-1">Student Login</p>
-            <p className="text-white font-mono">student@campus.ai</p>
-            <p className="text-slate-500 font-mono">student123</p>
-          </div>
-          <div className="p-3 bg-white/5 rounded-xl">
-            <p className="text-slate-400 mb-1">Admin Login</p>
-            <p className="text-white font-mono">admin@campus.ai</p>
-            <p className="text-slate-500 font-mono">admin123</p>
-          </div>
         </div>
       </div>
 
