@@ -223,19 +223,70 @@ function candidatesFor(task: PlanTask, ctx: Ctx, start: number, maxCrowd: number
     .sort((a, b) => a.cost - b.cost);
 }
 
+export interface SkippedTask {
+  activity: Activity;
+  label: string;
+  reason: string;
+  kind: 'skipped' | 'shortened';
+}
+
+/** Explain why no space fits a task at time `t` (closed vs. full), with when it next opens. */
+function whyUnavailable(task: PlanTask, ctx: Ctx, t: number): string {
+  const kinds = ctx.resources.filter((r) => r.isAvailable && ACTIVITY_TYPES[task.activity].includes(r.type));
+  if (!kinds.length) return `no ${ACTIVITY_LABEL[task.activity].toLowerCase()} space is open on campus right now`;
+  const end = t + task.durationMinutes;
+  const openOnes = kinds.filter((r) => isOpen(r, t, end));
+  if (!openOnes.length) {
+    const latestClose = Math.max(...kinds.map((r) => parseClock(r.closingTime) ?? 1260));
+    const earliestOpen = Math.min(...kinds.map((r) => parseClock(r.openingTime) ?? 480));
+    const lastOpen = kinds.filter((r) => (parseClock(r.closingTime) ?? 1260) === latestClose);
+    const names = lastOpen.length > 2 ? `all ${ACTIVITY_LABEL[task.activity].toLowerCase()} spaces` : lastOpen.map((r) => r.name).join(' / ');
+    kinds.splice(0, kinds.length, ...lastOpen);
+    return t >= latestClose || end > latestClose
+      ? `${names} ${kinds.length > 1 ? 'close' : 'closes'} at ${hhmm(latestClose)} — opens again at ${hhmm(earliestOpen)}`
+      : `${names} ${kinds.length > 1 ? 'open' : 'opens'} at ${hhmm(earliestOpen)}`;
+  }
+  return task.seats > 1
+    ? `no open space has ${task.seats} free seats at ${hhmm(t)}`
+    : `every open space is too crowded at ${hhmm(t)}`;
+}
+
+const SKIP_PENALTY = 1000;
+
 function planOrder(order: PlanTask[], ctx: Ctx, start: number, maxCrowd: number) {
   let t = start;
   let total = 0;
   const steps: { task: PlanTask; r: Resource; start: number; end: number; predicted: number; runnerUp?: { r: Resource; predicted: number } }[] = [];
-  for (const task of order) {
-    const cands = candidatesFor(task, ctx, t, maxCrowd);
-    if (!cands.length) return null;
+  const skipped: SkippedTask[] = [];
+  for (let task of order) {
+    let cands = candidatesFor(task, ctx, t, maxCrowd);
+    if (!cands.length) {
+      // Near closing time: shorten the activity to fit before the space closes (min 30 min)
+      const closes = ctx.resources
+        .filter((r) => r.isAvailable && ACTIVITY_TYPES[task.activity].includes(r.type) && isOpen(r, t, t + 1))
+        .map((r) => parseClock(r.closingTime) ?? 1260);
+      const room = closes.length ? Math.max(...closes) - t : 0;
+      if (room >= 30 && room < task.durationMinutes) {
+        const shorter = { ...task, durationMinutes: room };
+        cands = candidatesFor(shorter, ctx, t, maxCrowd);
+        if (cands.length) {
+          skipped.push({ activity: task.activity, label: ACTIVITY_LABEL[task.activity], reason: `shortened to ${room} min — ${cands[0].r.name} closes at ${hhmm(t + room)}`, kind: 'shortened' });
+          task = shorter;
+        }
+      }
+    }
+    if (!cands.length) {
+      // Keep the rest of the plan; explain what couldn't be scheduled
+      skipped.push({ activity: task.activity, label: ACTIVITY_LABEL[task.activity], reason: whyUnavailable(task, ctx, t), kind: 'skipped' });
+      total += SKIP_PENALTY;
+      continue;
+    }
     const best = cands[0];
     steps.push({ task, r: best.r, start: t, end: t + task.durationMinutes, predicted: best.predicted, runnerUp: cands[1] && { r: cands[1].r, predicted: cands[1].predicted } });
     total += best.cost * (task.durationMinutes / 60);
     t += task.durationMinutes + WALK_MIN;
   }
-  return { steps, total };
+  return { steps, skipped, total };
 }
 
 export async function buildPlan(message: string) {
@@ -258,13 +309,23 @@ export async function buildPlan(message: string) {
   let reordered = false;
   for (const perm of permutations(intent.tasks)) {
     const p = planOrder(perm, ctx, start, maxCrowd);
-    if (p && (!best || p.total < best.total - 3)) {
+    if (p.total < best.total - 3) {
       best = p;
       reordered = perm.some((t, i) => t !== intent.tasks[i]);
     }
   }
-  if (!best) {
-    return { intent, llmUsed, llmError, steps: [], summary: 'No open space fits that request right now — try a later time or fewer people.', reordered: false, clock };
+  const skipped = best.skipped;
+  const notDone = skipped.filter((s) => s.kind === 'skipped');
+  const shortened = skipped.filter((s) => s.kind === 'shortened');
+  const skippedNote = [
+    shortened.length ? 'Adjusted: ' + shortened.map((s) => `${s.label.toLowerCase()} ${s.reason}`).join('; ') + '.' : '',
+    notDone.length ? 'Not scheduled: ' + notDone.map((s) => `${s.label.toLowerCase()} (${s.reason})`).join('; ') + '.' : '',
+  ].filter(Boolean).join(' ');
+  if (!best.steps.length) {
+    return {
+      intent, llmUsed, llmError, steps: [], skipped, reordered: false, clock,
+      summary: `I couldn't schedule anything right now (${hhmm(nowMinute)}). ${skippedNote} Try again during campus hours (most spaces open 07:00–23:00).`,
+    };
   }
 
   const steps: PlanStep[] = best.steps.map((s, i) => {
@@ -294,7 +355,7 @@ export async function buildPlan(message: string) {
   });
 
   let reorderNote = '';
-  if (reordered && asked) {
+  if (reordered && asked.steps.length) {
     // Explain the biggest crowd we avoided by changing the order
     const gains = best.steps
       .map((s) => {
@@ -311,7 +372,7 @@ export async function buildPlan(message: string) {
 
   const template =
     steps.map((s) => `${s.start}–${s.end} ${ACTIVITY_LABEL[s.activity].toLowerCase()} at ${s.resourceName} (~${s.predictedPct}% full)`).join(', then ') +
-    '.' + (reorderNote ? ' ' + reorderNote : '');
+    '.' + (reorderNote ? ' ' + reorderNote : ''); // skipped/shortened tasks are returned separately in `skipped`
 
   let summary = template;
   if (llmUsed && config.groqApiKey) {
@@ -319,19 +380,19 @@ export async function buildPlan(message: string) {
       summary = (
         await groqChat(
           [
-            { role: 'system', content: 'You are a friendly campus assistant talking to a student. In at most 2 short, natural sentences, summarise the plan (places and times) and give the single most useful reason it is a good plan, e.g. a crowd it avoids (nowPct vs forecastPct) or the reorderNote. Do not list every percentage. Use ONLY the facts given. No markdown, no greetings.' },
-            { role: 'user', content: JSON.stringify({ request: message.slice(0, 300), plan: steps.map((s) => ({ what: ACTIVITY_LABEL[s.activity], where: s.resourceName, from: s.start, to: s.end, forecastPct: s.predictedPct, nowPct: s.currentPct })), reorderNote }) },
+            { role: 'system', content: 'You are a friendly campus assistant talking to a student. In at most 2 short, natural sentences, summarise ONLY the activities in the plan (places and times); do not mention anything else the student may have asked for. Add a reason ONLY if one is directly supported by the given numbers (e.g. crowd now much higher than the forecast means the place is emptying out) or by reorderNote; never invent crowd peaks or times that are not in the data. Use ONLY the facts given, in plain words (never write field names like crowdPercentNow). No markdown, no greetings.' },
+            { role: 'user', content: JSON.stringify({ plan: steps.map((s) => ({ activity: ACTIVITY_LABEL[s.activity], place: s.resourceName, from: s.start, to: s.end, crowdPercentNow: s.currentPct, crowdPercentForecast: s.predictedPct })), reorderNote }) },
           ],
           false,
           120
         )
-      ).trim() || template;
+      ).trim().replace(/\s+/g, ' ') || template;
     } catch {
       summary = template;
     }
   }
 
-  return { intent, llmUsed, llmError, steps, summary, reordered, clock };
+  return { intent, llmUsed, llmError, steps, skipped, summary, reordered, clock };
 }
 
 /** Re-check an active plan against the latest forecast; propose swaps for steps that got crowded. */

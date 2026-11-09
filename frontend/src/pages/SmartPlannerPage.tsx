@@ -49,7 +49,7 @@ export const SmartPlannerPage: React.FC = () => {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [plan, setPlan] = useState<{ steps: PlanStep[]; summary: string; llmUsed: boolean; reordered: boolean } | null>(null);
+  const [plan, setPlan] = useState<{ steps: PlanStep[]; skipped?: { activity: string; label: string; reason: string; kind?: 'skipped' | 'shortened' }[]; summary: string; llmUsed: boolean; reordered: boolean } | null>(null);
   const [alerts, setAlerts] = useState<PlanAlert[]>([]);
   const [booked, setBooked] = useState<Record<number, string>>({});
   const [bookingStep, setBookingStep] = useState<number | null>(null);
@@ -160,6 +160,16 @@ export const SmartPlannerPage: React.FC = () => {
               </span>
             </div>
             <p className="text-slate-200 text-sm leading-relaxed">{plan.summary}</p>
+            {!!plan.skipped?.length && (
+              <div className="mt-3 space-y-1.5">
+                {plan.skipped.map((s, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs rounded-lg bg-amber-500/10 border border-amber-500/25 px-3 py-2 text-amber-200">
+                    <span>{ACTIVITY_ICON[s.activity] ?? '⏸'}</span>
+                    <span><b>{s.label}</b> {s.kind === 'shortened' ? s.reason : <>not scheduled — {s.reason}</>}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {alerts.map((a) => (
@@ -213,9 +223,9 @@ export const SmartPlannerPage: React.FC = () => {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-slate-600">
+          {plan.steps.length > 0 && <p className="text-[11px] text-slate-600">
             Watching this plan — re-checked every 20s against the latest forecast{lastCheck ? ` (last check ${lastCheck.toLocaleTimeString()})` : ''}. Nothing is booked unless you press "Book seat".
-          </p>
+          </p>}
         </div>
       )}
     </div>
