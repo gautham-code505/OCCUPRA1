@@ -1,18 +1,20 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Building, Shield, LogOut } from 'lucide-react';
+import { User, Mail, Building, Shield, LogOut, Settings } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const ProfilePage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   if (!user) return null;
 
   return (
     <div className="max-w-2xl space-y-6">
       <h1 className="text-xl font-bold text-white flex items-center gap-2">
-        <User size={20} className="text-blue-400" /> My Profile
+        <User size={20} className="text-blue-400" /> {t('profile.title')}
       </h1>
 
       {/* Profile card */}
@@ -33,9 +35,9 @@ export const ProfilePage: React.FC = () => {
 
         <div className="space-y-3">
           {[
-            { icon: <Mail size={14} className="text-blue-400" />, label: 'Email', value: user.email },
-            { icon: <Building size={14} className="text-blue-400" />, label: 'Department', value: user.department },
-            { icon: <Shield size={14} className="text-blue-400" />, label: 'Role', value: user.role },
+            { icon: <Mail size={14} className="text-blue-400" />, label: t('profile.email'), value: user.email },
+            { icon: <Building size={14} className="text-blue-400" />, label: t('profile.department'), value: user.department },
+            { icon: <Shield size={14} className="text-blue-400" />, label: t('profile.role'), value: user.role },
           ].map(item => (
             <div key={item.label} className="flex items-center gap-4 p-3 bg-white/4 rounded-xl">
               <div className="w-8 flex-shrink-0">{item.icon}</div>
@@ -50,18 +52,18 @@ export const ProfilePage: React.FC = () => {
 
       {/* Quick access */}
       <div className="glass-card rounded-2xl border border-white/8 p-5">
-        <h3 className="text-sm font-semibold text-white mb-4">Quick Access</h3>
+        <h3 className="text-sm font-semibold text-white mb-4">{t('profile.quickAccess')}</h3>
         <div className="grid grid-cols-2 gap-3">
           {(user.role === 'STUDENT' ? [
-            { label: 'My Bookings', path: '/bookings' },
-            { label: 'Notifications', path: '/notifications' },
-            { label: 'Campus Map', path: '/map' },
-            { label: 'Find Best Space', path: '/recommendation' },
+            { label: t('nav.bookings'), path: '/bookings' },
+            { label: t('nav.notifications'), path: '/notifications' },
+            { label: t('nav.campusMap'), path: '/map' },
+            { label: t('nav.findSpace'), path: '/recommendation' },
           ] : [
-            { label: 'Admin Dashboard', path: '/admin' },
-            { label: 'IoT Sensors', path: '/admin/sensors' },
-            { label: 'Analytics', path: '/admin/analytics' },
-            { label: 'AI Insights', path: '/admin/insights' },
+            { label: t('nav.commandCenter'), path: '/admin' },
+            { label: t('nav.sensors'), path: '/admin/sensors' },
+            { label: t('nav.crowdAnalytics'), path: '/admin/analytics' },
+            { label: t('nav.insights'), path: '/admin/insights' },
           ]).map(item => (
             <button key={item.path} onClick={() => navigate(item.path)}
               className="p-3 bg-white/4 hover:bg-white/8 border border-white/5 hover:border-blue-500/20 rounded-xl text-sm text-slate-300 hover:text-white transition-all text-left font-medium">
@@ -71,10 +73,16 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      <button onClick={() => { logout(); navigate('/'); }}
-        className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium transition-all">
-        <LogOut size={14} /> Log Out
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button onClick={() => navigate('/settings')}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-300 rounded-xl text-sm font-medium transition-all">
+          <Settings size={14} /> {t('profile.openSettings')}
+        </button>
+        <button onClick={() => { logout(); navigate('/'); }}
+          className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium transition-all">
+          <LogOut size={14} /> {t('profile.logout')}
+        </button>
+      </div>
     </div>
   );
 };

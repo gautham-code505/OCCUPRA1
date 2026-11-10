@@ -6,9 +6,11 @@ import { useLiveData } from '../../contexts/LiveDataContext';
 import { notificationAPI } from '../../services/api';
 import { formatTimeAgo, formatTime } from '../../utils/helpers';
 import { LiveBadge } from '../ui/CoreComponents';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export const Topbar: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { notifications, unreadCount, isConnected, lastUpdate, refreshResources, clock } = useLiveData();
   const [search, setSearch] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -66,7 +68,7 @@ export const Topbar: React.FC = () => {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
-            placeholder="Search campus resources…"
+            placeholder={t('top.search')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:bg-white/8 transition-all"

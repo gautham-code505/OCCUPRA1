@@ -3,15 +3,17 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Map, Activity, BookOpen, Brain, Lightbulb,
   CalendarCheck, Bell, User, Settings, ChevronLeft, ChevronRight,
-  Shield, Cpu, BarChart3, Zap, Database, LogOut, TrendingUp, Eye, Sun, Moon, Sparkles, Leaf, FlaskConical
+  Shield, Cpu, BarChart3, Zap, Database, LogOut, TrendingUp, Eye, Sun, Moon, Sparkles, Leaf, FlaskConical, SlidersHorizontal
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLiveData } from '../../contexts/LiveDataContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { TKey } from '../../i18n/translations';
 import { cn } from '../../utils/helpers';
 
 interface NavItem {
-  label: string;
+  label: TKey;
   path: string;
   icon: React.ReactNode;
   adminOnly?: boolean;
@@ -19,36 +21,39 @@ interface NavItem {
 }
 
 const studentNav: NavItem[] = [
-  { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={18} /> },
-  { label: 'Campus Map', path: '/map', icon: <Map size={18} /> },
-  { label: 'Live Heatmap', path: '/heatmap', icon: <Activity size={18} /> },
-  { label: 'Crowd Prediction', path: '/prediction', icon: <TrendingUp size={18} /> },
-  { label: 'Smart Planner', path: '/planner', icon: <Sparkles size={18} />, badge: 'AI' },
-  { label: 'Find Best Space', path: '/recommendation', icon: <Brain size={18} /> },
-  { label: 'My Bookings', path: '/bookings', icon: <CalendarCheck size={18} /> },
-  { label: 'Notifications', path: '/notifications', icon: <Bell size={18} /> },
-  { label: 'Profile', path: '/profile', icon: <User size={18} /> },
+  { label: 'nav.dashboard', path: '/dashboard', icon: <LayoutDashboard size={18} /> },
+  { label: 'nav.campusMap', path: '/map', icon: <Map size={18} /> },
+  { label: 'nav.heatmap', path: '/heatmap', icon: <Activity size={18} /> },
+  { label: 'nav.prediction', path: '/prediction', icon: <TrendingUp size={18} /> },
+  { label: 'nav.planner', path: '/planner', icon: <Sparkles size={18} />, badge: 'AI' },
+  { label: 'nav.findSpace', path: '/recommendation', icon: <Brain size={18} /> },
+  { label: 'nav.bookings', path: '/bookings', icon: <CalendarCheck size={18} /> },
+  { label: 'nav.notifications', path: '/notifications', icon: <Bell size={18} /> },
+  { label: 'nav.profile', path: '/profile', icon: <User size={18} /> },
+  { label: 'nav.settings', path: '/settings', icon: <Settings size={18} /> },
 ];
 
 const adminNav: NavItem[] = [
-  { label: 'Command Center', path: '/admin', icon: <Shield size={18} /> },
-  { label: 'Live Monitoring', path: '/admin/monitoring', icon: <Eye size={18} /> },
-  { label: 'IoT Sensors', path: '/admin/sensors', icon: <Cpu size={18} /> },
-  { label: 'Resources', path: '/admin/resources', icon: <Database size={18} /> },
-  { label: 'Crowd Analytics', path: '/admin/analytics', icon: <BarChart3 size={18} /> },
-  { label: 'Prediction Analytics', path: '/admin/predictions', icon: <TrendingUp size={18} /> },
-  { label: 'Energy Optimizer', path: '/admin/energy', icon: <Leaf size={18} />, badge: 'NEW' },
-  { label: 'What-If Simulator', path: '/admin/whatif', icon: <FlaskConical size={18} />, badge: 'NEW' },
-  { label: 'Utilization', path: '/admin/utilization', icon: <Zap size={18} /> },
-  { label: 'AI Insights', path: '/admin/insights', icon: <Lightbulb size={18} /> },
-  { label: 'Bookings Mgmt', path: '/admin/bookings', icon: <CalendarCheck size={18} /> },
-  { label: 'Settings', path: '/admin/settings', icon: <Settings size={18} /> },
+  { label: 'nav.commandCenter', path: '/admin', icon: <Shield size={18} /> },
+  { label: 'nav.monitoring', path: '/admin/monitoring', icon: <Eye size={18} /> },
+  { label: 'nav.sensors', path: '/admin/sensors', icon: <Cpu size={18} /> },
+  { label: 'nav.resources', path: '/admin/resources', icon: <Database size={18} /> },
+  { label: 'nav.crowdAnalytics', path: '/admin/analytics', icon: <BarChart3 size={18} /> },
+  { label: 'nav.predictionAnalytics', path: '/admin/predictions', icon: <TrendingUp size={18} /> },
+  { label: 'nav.energy', path: '/admin/energy', icon: <Leaf size={18} />, badge: 'NEW' },
+  { label: 'nav.whatif', path: '/admin/whatif', icon: <FlaskConical size={18} />, badge: 'NEW' },
+  { label: 'nav.utilization', path: '/admin/utilization', icon: <Zap size={18} /> },
+  { label: 'nav.insights', path: '/admin/insights', icon: <Lightbulb size={18} /> },
+  { label: 'nav.bookingsMgmt', path: '/admin/bookings', icon: <CalendarCheck size={18} /> },
+  { label: 'nav.systemSettings', path: '/admin/settings', icon: <Settings size={18} /> },
+  { label: 'nav.generalSettings', path: '/settings', icon: <SlidersHorizontal size={18} /> },
 ];
 
 export const Sidebar: React.FC = () => {
   const { user, logout, isAdmin } = useAuth();
   const { unreadCount, isConnected } = useLiveData();
   const { theme, toggleTheme } = useTheme();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -79,7 +84,7 @@ export const Sidebar: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className={cn('w-2 h-2 rounded-full', isConnected ? 'bg-emerald-400 animate-live' : 'bg-red-400')} />
             <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-              {isConnected ? 'IoT Stream Active' : 'Reconnecting…'}
+              {isConnected ? t('side.streamActive') : t('side.reconnecting')}
             </span>
           </div>
         </div>
@@ -95,7 +100,7 @@ export const Sidebar: React.FC = () => {
               : 'bg-blue-500/15 text-blue-400 border-blue-500/30'
           )}>
             {isAdmin ? <Shield size={9} /> : <User size={9} />}
-            {isAdmin ? 'ADMIN MODE' : 'STUDENT MODE'}
+            {isAdmin ? t('side.adminMode') : t('side.studentMode')}
           </span>
         </div>
       )}
@@ -103,13 +108,13 @@ export const Sidebar: React.FC = () => {
       {/* Nav Items */}
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
         {navItems.map(item => {
-          const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+          const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path + '/'));
           const isNotif = item.path === '/notifications';
           return (
             <Link
               key={item.path}
               to={item.path}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? t(item.label) : undefined}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative',
                 isActive
@@ -120,7 +125,7 @@ export const Sidebar: React.FC = () => {
               <span className={cn('flex-shrink-0', isActive ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300')}>
                 {item.icon}
               </span>
-              {!collapsed && <span className="truncate">{item.label}</span>}
+              {!collapsed && <span className="truncate">{t(item.label)}</span>}
               {!collapsed && item.badge && (
                 <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">{item.badge}</span>
               )}
@@ -157,7 +162,7 @@ export const Sidebar: React.FC = () => {
           title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-blue-400" />}
-          {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+          {!collapsed && <span>{theme === 'dark' ? t('side.lightMode') : t('side.darkMode')}</span>}
         </button>
         <button
           onClick={() => { logout(); navigate('/'); }}
@@ -168,7 +173,7 @@ export const Sidebar: React.FC = () => {
           title="Log out"
         >
           <LogOut size={16} />
-          {!collapsed && 'Log out'}
+          {!collapsed && t('side.logout')}
         </button>
       </div>
 

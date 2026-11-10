@@ -38,6 +38,10 @@ export const authAPI = {
 
   getMe: () =>
     fetch(`${BASE_URL}/auth/me`, { headers: getHeaders() }).then(handleResponse),
+  updateMe: (data: { name?: string; department?: string; phoneNo?: string; rollNo?: string }) =>
+    fetch(`${BASE_URL}/auth/me`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(data) }).then(handleResponse),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    fetch(`${BASE_URL}/auth/password`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ currentPassword, newPassword }) }).then(handleResponse),
 };
 
 // RESOURCES

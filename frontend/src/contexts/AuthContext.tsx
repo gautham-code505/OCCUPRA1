@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (u: User) => void;
   isAdmin: boolean;
 }
 
@@ -36,6 +37,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(data.user);
   };
 
+  const updateUser = (u: User) => {
+    localStorage.setItem('campuspulse_user', JSON.stringify(u));
+    setUser(u);
+  };
+
   const logout = () => {
     localStorage.removeItem('campuspulse_token');
     localStorage.removeItem('campuspulse_user');
@@ -44,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, isAdmin: user?.role === 'ADMIN' }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser, isAdmin: user?.role === 'ADMIN' }}>
       {children}
     </AuthContext.Provider>
   );

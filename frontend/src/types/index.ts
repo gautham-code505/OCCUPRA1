@@ -4,6 +4,8 @@ export interface User {
   name: string;
   role: 'STUDENT' | 'ADMIN';
   department: string;
+  phoneNo?: string | null;
+  rollNo?: string | null;
   avatarUrl?: string;
   createdAt: string;
 }

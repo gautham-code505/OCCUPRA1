@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { LiveDataProvider } from './contexts/LiveDataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { GeneralSettingsPage } from './pages/GeneralSettingsPage';
 import { RequireAuth } from './components/auth/RequireAuth';
 import { AppLayout } from './components/layout/AppLayout';
 
@@ -35,6 +37,7 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <ThemeProvider>
+      <LanguageProvider>
         <AuthProvider>
           <LiveDataProvider>
           <Routes>
@@ -54,6 +57,7 @@ const App: React.FC = () => {
                 <Route path="/bookings" element={<BookingsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/settings" element={<GeneralSettingsPage />} />
               </Route>
             </Route>
 
@@ -80,6 +84,7 @@ const App: React.FC = () => {
           </Routes>
           </LiveDataProvider>
         </AuthProvider>
+      </LanguageProvider>
       </ThemeProvider>
     </BrowserRouter>
   );

@@ -123,6 +123,8 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         name: true,
         role: true,
         department: true,
+        phoneNo: true,
+        rollNo: true,
         avatarUrl: true,
         createdAt: true,
       },
@@ -137,5 +139,94 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
   } catch (error) {
     console.error('Get me error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Shared demo accounts: anyone can log in with them, so their password must not be changeable
+const DEMO_ACCOUNTS = new Set(['student@campus.ai', 'admin@campus.ai']);
+
+const cleanText = (v: unknown, max: number): string | null | undefined => {
+  if (v === undefined) return undefined;
+  if (v === null) return null;
+  const s = String(v).trim();
+  return s ? s.slice(0, max) : null;
+};
+
+/** PUT /api/auth/me — update own account info (email and role are not editable here). */
+export const updateMe = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name, department, phoneNo, rollNo } = req.body ?? {};
+    const data: Record<string, string | null> = {};
+    const n = cleanText(name, 80);
+    if (n !== undefined) {
+      if (!n || n.length < 2) {
+        res.status(400).json({ error: 'Name must be at least 2 characters' });
+        return;
+      }
+      data.name = n;
+    }
+    const d = cleanText(department, 120);
+    if (d !== undefined) data.department = d;
+    const p = cleanText(phoneNo, 20);
+    if (p !== undefined) {
+      if (p && !/^[+\d][\d\s-]{6,19}$/.test(p)) {
+        res.status(400).json({ error: 'Phone number looks invalid' });
+        return;
+      }
+      data.phoneNo = p;
+    }
+    const r = cleanText(rollNo, 30);
+    if (r !== undefined) data.rollNo = r;
+
+    const user = await prisma.user.update({
+      where: { id: req.user!.id },
+      data,
+      select: { id: true, email: true, name: true, role: true, department: true, phoneNo: true, rollNo: true, avatarUrl: true, createdAt: true },
+    });
+    res.json({ user });
+  } catch (error) {
+    console.error('Update me error:', error);
+    res.status(500).json({ error: 'Could not update account' });
+  }
+};
+
+/** PUT /api/auth/password — change own password (requires the current one). */
+export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body ?? {};
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+      res.status(400).json({ error: 'Current and new password are required' });
+      return;
+    }
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      res.status(400).json({ error: 'New password must be 8–128 characters' });
+      return;
+    }
+    if (!/[A-Za-z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      res.status(400).json({ error: 'New password must contain letters and numbers' });
+      return;
+    }
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    if (DEMO_ACCOUNTS.has(user.email)) {
+      res.status(403).json({ error: 'The shared demo account password cannot be changed. Register your own account to try this.' });
+      return;
+    }
+    if (!(await bcrypt.compare(currentPassword, user.password))) {
+      res.status(400).json({ error: 'Current password is incorrect' });
+      return;
+    }
+    if (await bcrypt.compare(newPassword, user.password)) {
+      res.status(400).json({ error: 'New password must be different from the current one' });
+      return;
+    }
+    await prisma.user.update({ where: { id: user.id }, data: { password: await bcrypt.hash(newPassword, 10) } });
+    res.json({ success: true, message: 'Password updated' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Could not change password' });
   }
 };

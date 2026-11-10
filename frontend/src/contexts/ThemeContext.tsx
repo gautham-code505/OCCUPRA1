@@ -1,35 +1,59 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type Theme = 'dark' | 'light';
+export type ThemePreference = Theme | 'system';
 
 interface ThemeContextType {
+  /** The theme actually applied right now */
   theme: Theme;
+  /** What the user chose (may be "system") */
+  preference: ThemePreference;
+  setPreference: (p: ThemePreference) => void;
   toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const systemTheme = (): Theme =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem('occupra_theme') as Theme) || 'dark';
+  const [preference, setPreference] = useState<ThemePreference>(() => {
+    try {
+      const saved = localStorage.getItem('occupra_theme');
+      if (saved === 'dark' || saved === 'light' || saved === 'system') return saved;
+    } catch (_) {}
+    return 'dark';
   });
+  const [system, setSystem] = useState<Theme>(systemTheme);
+
+  // Follow OS changes while "system" is selected
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-color-scheme: light)');
+    if (!mq) return;
+    const onChange = () => setSystem(mq.matches ? 'light' : 'dark');
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
+
+  const theme: Theme = preference === 'system' ? system : preference;
 
   useEffect(() => {
-    localStorage.setItem('occupra_theme', theme);
+    try {
+      localStorage.setItem('occupra_theme', preference);
+    } catch (_) {}
+  }, [preference]);
+
+  useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'light') {
-      root.classList.add('light-mode');
-      root.classList.remove('dark-mode');
-    } else {
-      root.classList.add('dark-mode');
-      root.classList.remove('light-mode');
-    }
+    root.classList.toggle('light-mode', theme === 'light');
+    root.classList.toggle('dark-mode', theme === 'dark');
   }, [theme]);
 
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => setPreference(theme === 'dark' ? 'light' : 'dark');
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, preference, setPreference, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
