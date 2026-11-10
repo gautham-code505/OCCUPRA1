@@ -69,6 +69,7 @@ const WALK_MIN = 5;
 // ---------------- Intent extraction ----------------
 
 const SYSTEM_PROMPT = `You convert a university student's request into JSON for a campus planner.
+The request may be in English, Hindi, Bengali, Tamil or Telugu, in native script or romanized, or a mix. Understand it in any of these, and convert spoken numbers and durations exactly (e.g. "दो घंटे" / "two hours" = 120 minutes, "ஒரு மணி நேரம்" = 60, "আধ ঘণ্টা" = 30). A computer/lab request (कंप्यूटर लैब, கணினி ஆய்வகம், కంప్యూటర్ ల్యాబ్, কম্পিউটার ল্যাব) is "computer".
 Return ONLY a JSON object: {"tasks":[{"activity":A,"durationMinutes":N,"seats":N,"quiet":bool}],"startTime":"HH:MM"|null,"maxCrowdPct":N|null}
 A is one of: "study","group_study","computer","print","research","food","relax".
 Map: reading/revision/assignment -> study; team/project meeting/discuss -> group_study; coding/lab work/PC -> computer;
@@ -79,8 +80,9 @@ maxCrowdPct: 40 if they want it quiet/peaceful, else null.`;
 
 const FALLBACK_MODELS = ['openai/gpt-oss-20b', 'openai/gpt-oss-120b'];
 
-async function groqChat(messages: { role: string; content: string }[], json: boolean, maxTokens = 400): Promise<string> {
-  const models = [config.groqModel, ...FALLBACK_MODELS.filter((m) => m !== config.groqModel)];
+async function groqChat(messages: { role: string; content: string }[], json: boolean, maxTokens = 400, preferModel?: string): Promise<string> {
+  const first = preferModel ?? config.groqModel;
+  const models = [first, ...[config.groqModel, ...FALLBACK_MODELS].filter((m, i, a) => m !== first && a.indexOf(m) === i)];
   let lastErr: unknown;
   for (const model of models) {
     const ctrl = new AbortController();
@@ -174,7 +176,9 @@ export function parseIntentLocally(text: string): PlanIntent {
 export async function extractIntent(message: string): Promise<{ intent: PlanIntent; llmUsed: boolean; llmError?: string }> {
   if (config.groqApiKey) {
     try {
-      const out = await groqChat([{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: message.slice(0, 600) }], true);
+      // Non-English (Indic script) requests go to the larger model, which handles Hindi/Bengali/Tamil/Telugu much better
+      const indic = /[ऀ-෿]/.test(message);
+      const out = await groqChat([{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: message.slice(0, 600) }], true, 400, indic ? 'openai/gpt-oss-120b' : undefined);
       const intent = sanitizeIntent(JSON.parse(out));
       if (intent) return { intent, llmUsed: true };
     } catch (err: any) {
@@ -289,7 +293,10 @@ function planOrder(order: PlanTask[], ctx: Ctx, start: number, maxCrowd: number)
   return { steps, skipped, total };
 }
 
-export async function buildPlan(message: string) {
+const LANG_NAME: Record<string, string> = { en: 'English', hi: 'Hindi', bn: 'Bengali', ta: 'Tamil', te: 'Telugu' };
+
+export async function buildPlan(message: string, lang = 'en') {
+  const replyLang = LANG_NAME[lang] ?? 'English';
   const { intent, llmUsed, llmError } = await extractIntent(message);
   const resources = await prisma.resource.findMany({ include: { sensors: true } });
   const engine = IoTSimulationEngine.getInstance();
@@ -380,11 +387,12 @@ export async function buildPlan(message: string) {
       summary = (
         await groqChat(
           [
-            { role: 'system', content: 'You are a friendly campus assistant talking to a student. In at most 2 short, natural sentences, summarise ONLY the activities in the plan (places and times); do not mention anything else the student may have asked for. Add a reason ONLY if one is directly supported by the given numbers (e.g. crowd now much higher than the forecast means the place is emptying out) or by reorderNote; never invent crowd peaks or times that are not in the data. Use ONLY the facts given, in plain words (never write field names like crowdPercentNow). No markdown, no greetings.' },
+            { role: 'system', content: 'You are a friendly campus assistant talking to a student. In at most 2 short, natural sentences, summarise ONLY the activities in the plan (places and times); do not mention anything else the student may have asked for. Add a reason ONLY if one is directly supported by the given numbers (e.g. crowd now much higher than the forecast means the place is emptying out) or by reorderNote; never invent crowd peaks or times that are not in the data. Use ONLY the facts given, in plain words (never write field names like crowdPercentNow). No markdown, no greetings. Write the answer in ' + replyLang + ' (keep place names as given).' },
             { role: 'user', content: JSON.stringify({ plan: steps.map((s) => ({ activity: ACTIVITY_LABEL[s.activity], place: s.resourceName, from: s.start, to: s.end, crowdPercentNow: s.currentPct, crowdPercentForecast: s.predictedPct })), reorderNote }) },
           ],
           false,
-          120
+          lang === 'en' ? 120 : 300,
+          lang === 'en' ? undefined : 'openai/gpt-oss-120b'
         )
       ).trim().replace(/\s+/g, ' ') || template;
     } catch {
@@ -430,4 +438,37 @@ export async function checkPlan(steps: PlanStep[]) {
     }
   }
   return { checkedAt: simClock.info(), alerts };
+}
+
+// ---------------- Voice: speech-to-text via Groq Whisper ----------------
+
+const WHISPER_LANGS = new Set(['en', 'hi', 'bn', 'ta', 'te']);
+
+/** Transcribe a short voice clip (webm/ogg/mp4/wav) with Groq Whisper. Key stays on the server. */
+export async function transcribeAudio(audio: Buffer, mimeType: string, lang: string): Promise<string> {
+  if (!config.groqApiKey) throw new Error('Voice transcription is not configured (GROQ_API_KEY missing)');
+  const ext = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') || mimeType.includes('m4a') ? 'm4a' : mimeType.includes('wav') ? 'wav' : 'webm';
+  const form = new FormData();
+  form.append('file', new Blob([new Uint8Array(audio)], { type: mimeType || 'audio/webm' }), `voice.${ext}`);
+  form.append('model', 'whisper-large-v3-turbo');
+  form.append('response_format', 'json');
+  form.append('temperature', '0');
+  if (WHISPER_LANGS.has(lang)) form.append('language', lang);
+  form.append('prompt', 'Campus planner: library, study room, computer lab, canteen, lunch, print notes, group project.');
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${config.groqApiKey}` },
+      body: form,
+      signal: ctrl.signal,
+    });
+    if (!res.ok) throw new Error(`Groq Whisper HTTP ${res.status}: ${(await res.text()).slice(0, 160)}`);
+    const data: any = await res.json();
+    return String(data.text ?? '').trim();
+  } finally {
+    clearTimeout(timer);
+  }
 }

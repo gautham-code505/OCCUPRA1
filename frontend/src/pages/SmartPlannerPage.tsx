@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Sparkles, Send, MapPin, Clock, CheckCircle, AlertTriangle, RefreshCw, Users, Cpu } from 'lucide-react';
+import { Sparkles, Send, MapPin, Clock, CheckCircle, AlertTriangle, RefreshCw, Users, Cpu, Mic, Square, Volume2, VolumeX } from 'lucide-react';
+import { PlannerRobot, RobotMood } from '../components/planner/PlannerRobot';
+import { useVoiceInput, speak, stopSpeaking } from '../components/planner/useVoice';
+import { useLanguage } from '../contexts/LanguageContext';
 import { campusAPI, bookingAPI } from '../services/api';
 import { useLiveData } from '../contexts/LiveDataContext';
 
@@ -55,6 +58,34 @@ export const SmartPlannerPage: React.FC = () => {
   const [bookingStep, setBookingStep] = useState<number | null>(null);
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
   const planRef = useRef<PlanStep[] | null>(null);
+  const { lang } = useLanguage();
+  const [celebrate, setCelebrate] = useState(false);
+  const [readAloud, setReadAloud] = useState<boolean>(() => {
+    try { return localStorage.getItem('occupra_voice_reply') === '1'; } catch (_) { return false; }
+  });
+  const fromVoiceRef = useRef(false);
+  const voice = useVoiceInput(lang, (text) => {
+    fromVoiceRef.current = true;
+    submit(text);
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('occupra_voice_reply', readAloud ? '1' : '0'); } catch (_) {}
+    if (!readAloud) stopSpeaking();
+  }, [readAloud]);
+  useEffect(() => () => stopSpeaking(), []);
+
+  const mood: RobotMood = voice.state === 'listening' ? 'listening'
+    : loading || voice.state === 'transcribing' ? 'thinking'
+    : celebrate ? 'happy'
+    : error || voice.error ? 'sad'
+    : 'idle';
+  const robotSays = voice.state === 'listening' ? (voice.interim || 'I’m listening… tell me your plan!')
+    : voice.state === 'transcribing' ? 'Hmm, let me hear that properly…'
+    : loading ? 'Thinking… checking crowds and finding the best spots!'
+    : celebrate ? 'Ta-da! Here’s your plan 🎉'
+    : error || voice.error ? (voice.error || 'Oops — something went wrong. Try again?')
+    : 'Hi, I’m Occy! Type or tap the mic and tell me what you need to do.';
 
   const submit = async (text?: string) => {
     const msg = (text ?? message).trim();
@@ -65,12 +96,16 @@ export const SmartPlannerPage: React.FC = () => {
     setAlerts([]);
     setBooked({});
     try {
-      const data = await campusAPI.plan(msg);
+      const data = await campusAPI.plan(msg, lang);
       setPlan(data);
       planRef.current = data.steps;
+      setCelebrate(true);
+      setTimeout(() => setCelebrate(false), 2600);
+      if (readAloud || fromVoiceRef.current) speak(data.summary, lang);
     } catch (e: any) {
       setError(e.message);
     }
+    fromVoiceRef.current = false;
     setLoading(false);
   };
 
@@ -127,6 +162,13 @@ export const SmartPlannerPage: React.FC = () => {
       </div>
 
       <div className="glass-card rounded-2xl border border-white/10 p-5">
+        {/* Occy the robot + speech bubble */}
+        <div className="flex items-end gap-4 mb-4">
+          <div className="flex-shrink-0 pt-6"><PlannerRobot mood={mood} size={92} /></div>
+          <div className="relative mb-6 flex-1 min-w-0 rounded-2xl rounded-bl-sm bg-white/5 border border-white/10 px-4 py-3 text-sm text-slate-200" aria-live="polite">
+            {robotSays}
+          </div>
+        </div>
         <form onSubmit={(e) => { e.preventDefault(); submit(); }} className="flex gap-3">
           <input
             value={message}
@@ -135,6 +177,16 @@ export const SmartPlannerPage: React.FC = () => {
             maxLength={500}
             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50"
           />
+          <button
+            type="button"
+            onClick={voice.state === 'listening' ? voice.stop : voice.start}
+            disabled={!voice.supported || loading || voice.state === 'transcribing'}
+            title={voice.supported ? (voice.state === 'listening' ? 'Stop listening' : 'Speak your request') : 'Voice input is not supported in this browser'}
+            aria-label={voice.state === 'listening' ? 'Stop listening' : 'Speak your request'}
+            className={`px-4 py-3 rounded-xl border text-sm font-semibold flex items-center gap-2 transition-all disabled:opacity-40 ${voice.state === 'listening' ? 'bg-rose-500 border-rose-400 text-white animate-pulse' : 'bg-white/5 border-white/10 text-slate-200 hover:border-cyan-500/40'}`}
+          >
+            {voice.state === 'listening' ? <Square size={16} /> : <Mic size={16} />}
+          </button>
           <button disabled={loading || !message.trim()} className="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-50">
             {loading ? <RefreshCw size={16} className="animate-spin" /> : <Send size={16} />} Plan
           </button>
@@ -146,6 +198,15 @@ export const SmartPlannerPage: React.FC = () => {
               {ex}
             </button>
           ))}
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-3 text-[11px] text-slate-500">
+          <span>
+            {voice.engine === 'browser' ? '🎙️ Voice: your browser’s speech recognition' : voice.engine === 'whisper' ? '🎙️ Voice: Groq Whisper (cloud)' : 'Voice input not supported in this browser'}
+            {' · speaks '}{({ en: 'English', hi: 'Hindi', bn: 'Bengali', ta: 'Tamil', te: 'Telugu' } as Record<string, string>)[lang]}{' (change in Settings → Language)'}
+          </span>
+          <button type="button" onClick={() => setReadAloud((v) => !v)} className="flex items-center gap-1.5 hover:text-slate-300">
+            {readAloud ? <Volume2 size={13} /> : <VolumeX size={13} />} {readAloud ? 'Reading replies aloud' : 'Read replies aloud'}
+          </button>
         </div>
         {error && <p className="text-sm text-red-400 mt-3">{error}</p>}
       </div>

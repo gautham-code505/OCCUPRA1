@@ -1,9 +1,9 @@
-import { Router, Response, Request } from 'express';
+import express, { Router, Response, Request } from 'express';
 import { prisma } from '../utils/prisma';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth';
 import { analyzeEnergy } from '../services/energyService';
 import { runWhatIf } from '../services/whatIfService';
-import { buildPlan, checkPlan, PlanStep } from '../services/agentService';
+import { buildPlan, checkPlan, PlanStep, transcribeAudio } from '../services/agentService';
 import { getTimetable, sessionsForDay, Scenario } from '../campus/timetable';
 import { simClock } from '../campus/clock';
 import { DAY_NAMES, hhmm, parseClock } from '../campus/time';
@@ -114,12 +114,35 @@ router.post('/agent/plan', authenticate, async (req: AuthRequest, res: Response)
     return;
   }
   try {
-    res.json(await buildPlan(message));
+    const lang = typeof req.body?.lang === 'string' ? req.body.lang.slice(0, 5) : 'en';
+    res.json(await buildPlan(message, lang));
   } catch (err) {
     console.error('Agent plan error:', err);
     res.status(500).json({ error: 'Failed to build plan' });
   }
 });
+
+// Voice input: raw audio body (max ~6 MB ≈ a 1-minute clip), transcribed with Groq Whisper
+router.post(
+  '/agent/transcribe',
+  authenticate,
+  express.raw({ type: ['audio/*', 'video/webm', 'application/octet-stream'], limit: '6mb' }),
+  async (req: AuthRequest, res: Response) => {
+    const body = req.body as Buffer;
+    if (!Buffer.isBuffer(body) || body.length < 1000) {
+      res.status(400).json({ error: 'No audio received — hold the mic a little longer.' });
+      return;
+    }
+    try {
+      const lang = String(req.query.lang ?? 'en').slice(0, 5);
+      const text = await transcribeAudio(body, String(req.headers['content-type'] ?? 'audio/webm'), lang);
+      res.json({ text });
+    } catch (err: any) {
+      console.error('Transcribe error:', err?.message);
+      res.status(502).json({ error: 'Could not understand the audio. Please try again or type your request.' });
+    }
+  }
+);
 
 router.post('/agent/check', authenticate, async (req: AuthRequest, res: Response) => {
   const steps = Array.isArray(req.body?.steps) ? (req.body.steps as PlanStep[]).slice(0, 6) : [];

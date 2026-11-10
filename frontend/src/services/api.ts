@@ -162,7 +162,15 @@ export const campusAPI = {
   applyEnergy: (resourceId: string, open: boolean) => post('/campus/energy/apply', { resourceId, open }),
   whatIf: (body: { type: 'shift_slot' | 'stagger' | 'attendance'; day?: number; slotStart?: string; minutes?: number; factor?: number }) =>
     post('/campus/whatif', body),
-  plan: (message: string) => post('/campus/agent/plan', { message }),
+  plan: (message: string, lang?: string) => post('/campus/agent/plan', { message, lang }),
+  transcribe: (audio: Blob, lang: string) => {
+    const token = localStorage.getItem('campuspulse_token');
+    return fetch(`${BASE_URL}/campus/agent/transcribe?lang=${encodeURIComponent(lang)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': audio.type || 'audio/webm', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: audio,
+    }).then(handleResponse);
+  },
   checkPlan: (steps: any[]) => post('/campus/agent/check', { steps }),
   getWifi: () => fetch(`${BASE_URL}/campus/wifi`, { headers: getHeaders() }).then(handleResponse),
   getModelInfo: () => fetch(`${BASE_URL}/predictions/model-info`, { headers: getHeaders() }).then(handleResponse),
