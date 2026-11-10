@@ -4,6 +4,7 @@ import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth';
 import { analyzeEnergy } from '../services/energyService';
 import { runWhatIf } from '../services/whatIfService';
 import { buildPlan, checkPlan, PlanStep, transcribeAudio } from '../services/agentService';
+import { chat } from '../services/chatService';
 import { getTimetable, sessionsForDay, Scenario } from '../campus/timetable';
 import { simClock } from '../campus/clock';
 import { DAY_NAMES, hhmm, parseClock } from '../campus/time';
@@ -143,6 +144,18 @@ router.post(
     }
   }
 );
+
+// Conversational assistant (Occy): chats, answers crowd/app questions, and plans when asked
+router.post('/agent/chat', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const lang = typeof req.body?.lang === 'string' ? req.body.lang.slice(0, 5) : 'en';
+    const firstName = (req.user?.name || 'there').split(' ')[0];
+    res.json(await chat(req.body?.messages, lang, firstName));
+  } catch (err) {
+    console.error('Agent chat error:', err);
+    res.status(500).json({ error: 'Occy could not answer right now. Please try again.' });
+  }
+});
 
 router.post('/agent/check', authenticate, async (req: AuthRequest, res: Response) => {
   const steps = Array.isArray(req.body?.steps) ? (req.body.steps as PlanStep[]).slice(0, 6) : [];

@@ -80,7 +80,7 @@ maxCrowdPct: 40 if they want it quiet/peaceful, else null.`;
 
 const FALLBACK_MODELS = ['openai/gpt-oss-20b', 'openai/gpt-oss-120b'];
 
-async function groqChat(messages: { role: string; content: string }[], json: boolean, maxTokens = 400, preferModel?: string): Promise<string> {
+export async function groqChat(messages: { role: string; content: string }[], json: boolean, maxTokens = 400, preferModel?: string): Promise<string> {
   const first = preferModel ?? config.groqModel;
   const models = [first, ...[config.groqModel, ...FALLBACK_MODELS].filter((m, i, a) => m !== first && a.indexOf(m) === i)];
   let lastErr: unknown;
@@ -103,7 +103,8 @@ async function groqChat(messages: { role: string; content: string }[], json: boo
         }),
         signal: ctrl.signal,
       });
-      if (res.status === 404 || res.status === 400) {
+      if (res.status === 404 || res.status === 400 || res.status === 429) {
+        // retired/unsupported model, or free-tier rate limit on this model → try the next one
         lastErr = new Error(`Groq HTTP ${res.status} for ${model}: ${(await res.text()).slice(0, 160)}`);
         continue; // model retired/unsupported → try the next one
       }
@@ -153,10 +154,14 @@ export function parseIntentLocally(text: string): PlanIntent {
     const m = t.match(re);
     if (m && m.index !== undefined && !found.some((f) => f.activity === a)) found.push({ idx: m.index, activity: a });
   }
-  if (!found.length) found.push({ idx: 0, activity: 'study' });
+  // No recognisable activity → no tasks (the chat layer answers conversationally instead of guessing)
   found.sort((a, b) => a.idx - b.idx);
-  const hours = t.match(/(\d+(?:\.\d+)?)\s*(?:free\s+|spare\s+)?(?:hours?|hrs?|h)\b/);
-  const total = hours ? Number(hours[1]) * 60 : undefined;
+  const WORD_NUM: Record<string, number> = { one: 1, an: 1, a: 1, two: 2, three: 3, four: 4, five: 5, half: 0.5 };
+  const hours = t.match(/(\d+(?:\.\d+)?|one|an|a|two|three|four|five|half)\s*(?:free\s+|spare\s+)?(?:hours?|hrs?|h)\b/);
+  const hoursMin = hours ? (Number(hours[1]) || WORD_NUM[hours[1]] || 1) * 60 : undefined;
+  // "I have 3 free hours" = total budget; "study for 1 hour" = that activity's own duration
+  const isBudget = /\b(free|spare|have|got|total)\b/.test(t);
+  const total = isBudget ? hoursMin : undefined;
   const friends = t.match(/(\d+)\s*(?:friends|people|of us|members)/);
   const seats = friends ? Number(friends[1]) + (/(friends)/.test(friends[0]) ? 1 : 0) : 1;
   const fixed = found.filter((f) => ['print', 'food', 'relax'].includes(f.activity)).reduce((s, f) => s + DEFAULT_DURATION[f.activity], 0);
@@ -164,7 +169,11 @@ export function parseIntentLocally(text: string): PlanIntent {
   const tasks = found.map((f) => ({
     activity: f.activity,
     durationMinutes:
-      total && flexible.length && flexible.includes(f) ? Math.max(30, Math.round((total - fixed) / flexible.length)) : DEFAULT_DURATION[f.activity],
+      total && flexible.length && flexible.includes(f)
+        ? Math.max(30, Math.round((total - fixed) / flexible.length))
+        : hoursMin && !isBudget && flexible[0] === f
+        ? hoursMin
+        : DEFAULT_DURATION[f.activity],
     seats: ['food', 'print'].includes(f.activity) ? 1 : seats,
     quiet: /quiet|silent|peace/.test(t),
   }));
@@ -298,6 +307,12 @@ const LANG_NAME: Record<string, string> = { en: 'English', hi: 'Hindi', bn: 'Ben
 export async function buildPlan(message: string, lang = 'en') {
   const replyLang = LANG_NAME[lang] ?? 'English';
   const { intent, llmUsed, llmError } = await extractIntent(message);
+  if (!intent.tasks.length) {
+    return {
+      intent, llmUsed, llmError, steps: [], skipped: [], reordered: false, clock: simClock.info(),
+      summary: 'Tell me what you would like to do — for example study, eat, use a computer lab, print notes or meet your group — and for how long.',
+    };
+  }
   const resources = await prisma.resource.findMany({ include: { sensors: true } });
   const engine = IoTSimulationEngine.getInstance();
   const forecasts = new Map<string, PredictionResult[]>();

@@ -163,6 +163,7 @@ export const campusAPI = {
   whatIf: (body: { type: 'shift_slot' | 'stagger' | 'attendance'; day?: number; slotStart?: string; minutes?: number; factor?: number }) =>
     post('/campus/whatif', body),
   plan: (message: string, lang?: string) => post('/campus/agent/plan', { message, lang }),
+  chat: (messages: { role: 'user' | 'assistant'; content: string }[], lang?: string) => post('/campus/agent/chat', { messages, lang }),
   transcribe: (audio: Blob, lang: string) => {
     const token = localStorage.getItem('campuspulse_token');
     return fetch(`${BASE_URL}/campus/agent/transcribe?lang=${encodeURIComponent(lang)}`, {
