@@ -109,7 +109,7 @@ const en = {
   's.about.tech': 'Built with',
   's.about.privacy': 'Privacy first',
   's.about.privacyText': 'No cameras. Headcounts come from door counters and anonymous Wi-Fi connection counts — no personal tracking.',
-  's.about.team': 'Team',
+  's.about.team': 'Developer',
   's.about.teamText': 'Built by gautham-code505 for NITS Hacks.',
   's.about.version': 'Version',
 } as const;
@@ -210,7 +210,7 @@ const hi: Dict = {
   's.about.tech': 'तकनीक',
   's.about.privacy': 'गोपनीयता सर्वोपरि',
   's.about.privacyText': 'कोई कैमरा नहीं। गिनती डोर काउंटर और गुमनाम Wi-Fi कनेक्शन संख्या से होती है — किसी व्यक्ति को ट्रैक नहीं किया जाता।',
-  's.about.team': 'टीम',
+  's.about.team': 'डेवलपर',
   's.about.teamText': 'NITS Hacks के लिए gautham-code505 द्वारा निर्मित।',
   's.about.version': 'संस्करण',
 };
@@ -308,7 +308,7 @@ const bn: Dict = {
   's.about.tech': 'প্রযুক্তি',
   's.about.privacy': 'গোপনীয়তা সবার আগে',
   's.about.privacyText': 'কোনো ক্যামেরা নেই। গণনা হয় ডোর কাউন্টার ও বেনামী Wi-Fi সংযোগের সংখ্যা থেকে — কাউকে ব্যক্তিগতভাবে ট্র্যাক করা হয় না।',
-  's.about.team': 'দল',
+  's.about.team': 'ডেভেলপার',
   's.about.teamText': 'NITS Hacks-এর জন্য gautham-code505 তৈরি করেছে।',
   's.about.version': 'সংস্করণ',
 };
@@ -406,8 +406,8 @@ const ta: Dict = {
   's.about.tech': 'தொழில்நுட்பம்',
   's.about.privacy': 'தனியுரிமைக்கு முன்னுரிமை',
   's.about.privacyText': 'கேமராக்கள் இல்லை. எண்ணிக்கை கதவு கவுண்டர்கள் மற்றும் அநாமதேய Wi-Fi இணைப்பு எண்ணிக்கையிலிருந்து வருகிறது — யாரும் தனிப்பட்ட முறையில் கண்காணிக்கப்படுவதில்லை.',
-  's.about.team': 'குழு',
-  's.about.teamText': 'NITS Hacks-க்காக gautham-code505 உருவாக்கப்பட்டது.',
+  's.about.team': 'டெவலப்பர்',
+  's.about.teamText': 'NITS Hacks-க்காக gautham-code505 உருவாக்கியது.',
   's.about.version': 'பதிப்பு',
 };
 
@@ -504,8 +504,8 @@ const te: Dict = {
   's.about.tech': 'సాంకేతికత',
   's.about.privacy': 'గోప్యతకు ప్రాధాన్యత',
   's.about.privacyText': 'కెమెరాలు లేవు. లెక్కింపు డోర్ కౌంటర్లు మరియు అనామక Wi-Fi కనెక్షన్ల సంఖ్య నుండి వస్తుంది — ఎవరినీ వ్యక్తిగతంగా ట్రాక్ చేయరు.',
-  's.about.team': 'బృందం',
-  's.about.teamText': 'NITS Hacks కోసం gautham-code505 రూపొందించింది.',
+  's.about.team': 'డెవలపర్',
+  's.about.teamText': 'NITS Hacks కోసం gautham-code505 రూపొందించారు.',
   's.about.version': 'వెర్షన్',
 };
 
