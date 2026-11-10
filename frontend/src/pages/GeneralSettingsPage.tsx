@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Settings, User, KeyRound, Palette, Languages, Info, Check, Moon, Sun, Monitor, Eye, EyeOff,
-  ShieldCheck, Sparkles, Github, Lock,
+  ShieldCheck, Sparkles, Lock,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, ThemePreference } from '../contexts/ThemeContext';
@@ -225,7 +225,6 @@ const LanguageTab: React.FC = () => {
 const AboutTab: React.FC = () => {
   const { t } = useLanguage();
   const features: TKey[] = ['s.about.f1', 's.about.f2', 's.about.f3', 's.about.f4', 's.about.f5', 's.about.f6'];
-  const tech = ['React 18', 'TypeScript', 'Vite', 'Tailwind CSS', 'Leaflet', 'Recharts', 'Node.js', 'Express', 'Prisma', 'SQLite', 'scikit-learn (GBM)', 'Groq LLM', 'Server-Sent Events', 'Vercel', 'Render'];
   return (
     <div className="space-y-4">
       <div className="glass-card rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-600/10 p-6">
@@ -250,22 +249,8 @@ const AboutTab: React.FC = () => {
           ))}
         </ul>
       </Card>
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card title={t('s.about.privacy')}>
-          <p className="text-sm text-slate-300 leading-relaxed flex gap-2"><ShieldCheck size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" /> {t('s.about.privacyText')}</p>
-        </Card>
-        <Card title={t('s.about.team')}>
-          <p className="text-sm text-slate-300">{t('s.about.teamText')}</p>
-          <a href="https://github.com/gautham-code505/OCCUPRA1" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 mt-2">
-            <Github size={14} /> github.com/gautham-code505/OCCUPRA1
-          </a>
-          <p className="text-xs text-slate-500 mt-2">{t('s.about.version')} 2.0 · 2026</p>
-        </Card>
-      </div>
-      <Card title={t('s.about.tech')}>
-        <div className="flex flex-wrap gap-2">
-          {tech.map((x) => <span key={x} className="text-xs px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">{x}</span>)}
-        </div>
+      <Card title={t('s.about.privacy')}>
+        <p className="text-sm text-slate-300 leading-relaxed flex gap-2"><ShieldCheck size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" /> {t('s.about.privacyText')}</p>
       </Card>
     </div>
   );
