@@ -11,7 +11,17 @@
     "db:push": "cd backend && npx prisma db push",
     "db:seed": "cd backend && npx ts-node src/prisma/seed.ts"
   },
-  "keywords": ["smart-campus", "iot-simulation", "ai-crowd-prediction", "hackathon"],
+  "keywords": [
+    "smart-campus",
+    "iot-simulation",
+    "ai-crowd-prediction",
+    "hackathon"
+  ],
   "author": "gautham-code505",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gautham-code505/OCCUPRA1.git"
+  },
+  "homepage": "https://occupra.vercel.app"
 }
