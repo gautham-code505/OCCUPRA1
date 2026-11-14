@@ -1,14 +1,20 @@
-# CampusPulse AI - Backend Platform
+# OCCUPRA - Backend
 
-> **Smart Campus Resource Finder & Crowd Prediction Platform**  
-> Powered by Python, FastAPI, Virtual IoT Simulation, XGBoost Machine Learning, and Firebase Firestore.
+> **Smart Campus Occupancy & Resource Intelligence**
 
-Please see the root [README.md](../README.md) for full project documentation, setup guides, and API schemas.
+Please see the root [README.md](../README.md) for full project documentation.
 
-### Quick Start
+### Quick Start (Node.js API — the one the web app uses)
+```bash
+npm install
+cp .env.example .env   # set JWT_SECRET, and GROQ_API_KEY for the Smart Planner chat/voice
+npm run dev            # http://localhost:5000
+```
+- Health check: http://localhost:5000/api/health
+- Live data stream (SSE): http://localhost:5000/api/stream
+
+### Optional: Python FastAPI service
 ```bash
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload   # http://localhost:8000/docs
 ```
-- Interactive API Docs: http://localhost:8000/docs
-- Live WebSocket Feed: ws://localhost:8000/ws/occupancy
